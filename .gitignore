@@ -44,3 +44,14 @@ example
 
 # local scratch
 gemini implementation/
+legacy_scamshield/
+.git_backup/
+*.docx
+*.py
+*.json
+*.md
+!README.md
+!AGENTS.md
+!CLAUDE.md
+test_civic_images/
+verified_real_benchmark_images/
