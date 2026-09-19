@@ -1,102 +1,112 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, Image } from 'react-native';
 import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { Ticket } from '../types';
-
-interface Region {
-  latitude: number;
-  longitude: number;
-  latitudeDelta: number;
-  longitudeDelta: number;
-}
+import { MapArea } from './InteractiveMap';
 
 interface Props {
   tickets: Ticket[];
   selectedTicket: Ticket | null;
   onSelectTicket: (ticket: Ticket) => void;
   userCoords: { latitude: number; longitude: number };
-  pillLabel: string;
-  mapRegion: Region;
-  userPopupPlace: string;
-  tileStatus: 'loading' | 'ready' | 'error';
-  onMapReady: () => void;
+  area?: MapArea;
 }
 
 const pinColorFor = (status: Ticket['status']) =>
   status === 'RESOLVED' ? '#10B981' : status === 'PROVISIONAL_FIX' ? '#F59E0B' : '#EF4444';
 
-// Native-only file: never imported on web (InteractiveMap requires it behind
-// a Platform.OS gate), so Metro web never bundles react-native-maps.
+// Native-only file: never imported on the web bundle (MapScreen gates it by
+// Platform.OS), so Metro never resolves react-native-maps for web.
 export const NativeOsmMap: React.FC<Props> = ({
   tickets,
   selectedTicket,
   onSelectTicket,
   userCoords,
-  pillLabel,
-  mapRegion,
-  userPopupPlace,
-  tileStatus,
-  onMapReady,
-}) => (
-  <View style={styles.container}>
-    <View style={styles.osmPill}>
-      <Text style={styles.osmPillText}>{pillLabel}</Text>
-    </View>
-    {tileStatus === 'error' ? (
-      <View style={styles.osmFallback}>
-        <Image
-          source={{
-            uri: `https://staticmap.openstreetmap.de/staticmap.php?center=${mapRegion.latitude},${mapRegion.longitude}&zoom=14&size=800x600&maptype=mapnik`,
-          }}
-          style={styles.osmFallbackImage}
-          resizeMode="cover"
-        />
-        <View style={styles.osmFallbackBanner}>
-          <Text style={styles.osmFallbackText}>Live tiles unavailable — static OSM snapshot</Text>
-        </View>
+  area,
+}) => {
+  const fallbackCenter = area?.center ?? userCoords;
+  const fallbackZoom = area?.zoom ?? 15;
+  const pillLabel = area?.pillLabel ?? 'WARD 14 • CENTRAL DELHI GEOSPATIAL RADAR';
+  const userPopupPlace = area?.userPopupPlace ?? 'Ward 14, Delhi';
+
+  const mapRegion = {
+    latitude: selectedTicket?.latitude ?? fallbackCenter.latitude,
+    longitude: selectedTicket?.longitude ?? fallbackCenter.longitude,
+    latitudeDelta: fallbackZoom >= 15 ? 0.02 : 0.06,
+    longitudeDelta: fallbackZoom >= 15 ? 0.02 : 0.06,
+  };
+
+  const [tileStatus, setTileStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  useEffect(() => {
+    setTileStatus('loading');
+  }, [area?.pillLabel]);
+  useEffect(() => {
+    if (tileStatus !== 'loading') return;
+    const t = setTimeout(() => setTileStatus((s) => (s === 'loading' ? 'error' : s)), 12000);
+    return () => clearTimeout(t);
+  }, [tileStatus, area?.pillLabel]);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.osmPill}>
+        <Text style={styles.osmPillText}>{pillLabel}</Text>
       </View>
-    ) : (
-      <MapView
-        style={styles.nativeMap}
-        initialRegion={mapRegion}
-        region={
-          selectedTicket
-            ? { ...mapRegion, latitude: selectedTicket.latitude, longitude: selectedTicket.longitude }
-            : undefined
-        }
-        mapType="none"
-        onMapReady={onMapReady}
-      >
-        <UrlTile
-          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maximumZ={19}
-          tileSize={256}
-          shouldReplaceMapContent={true}
-          flipY={false}
-        />
-        <Marker
-          coordinate={{ latitude: userCoords.latitude, longitude: userCoords.longitude }}
-          title="Your Live GPS Location"
-          description={userPopupPlace}
-          pinColor="#38BDF8"
-        />
-        {tickets.map((t) => (
-          <Marker
-            key={t.id}
-            coordinate={{ latitude: t.latitude, longitude: t.longitude }}
-            title={`${t.category.replace(/_/g, ' ')} • ${t.status}`}
-            description={`Severity ${t.severity}/5`}
-            pinColor={pinColorFor(t.status)}
-            onPress={() => onSelectTicket(t)}
+      {tileStatus === 'error' ? (
+        <View style={styles.osmFallback}>
+          <Image
+            source={{
+              uri: `https://staticmap.openstreetmap.de/staticmap.php?center=${mapRegion.latitude},${mapRegion.longitude}&zoom=14&size=800x600&maptype=mapnik`,
+            }}
+            style={styles.osmFallbackImage}
+            resizeMode="cover"
           />
-        ))}
-      </MapView>
-    )}
-    <View style={styles.osmCredit}>
-      <Text style={styles.osmCreditText}>© OpenStreetMap contributors</Text>
+          <View style={styles.osmFallbackBanner}>
+            <Text style={styles.osmFallbackText}>Live tiles unavailable — static OSM snapshot</Text>
+          </View>
+        </View>
+      ) : (
+        <MapView
+          style={styles.nativeMap}
+          initialRegion={mapRegion}
+          region={
+            selectedTicket
+              ? { ...mapRegion, latitude: selectedTicket.latitude, longitude: selectedTicket.longitude }
+              : undefined
+          }
+          mapType="none"
+          onMapReady={() => setTileStatus('ready')}
+        >
+          <UrlTile
+            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+            tileSize={256}
+            shouldReplaceMapContent={true}
+            flipY={false}
+          />
+          <Marker
+            coordinate={{ latitude: userCoords.latitude, longitude: userCoords.longitude }}
+            title="Your Live GPS Location"
+            description={userPopupPlace}
+            pinColor="#38BDF8"
+          />
+          {tickets.map((t) => (
+            <Marker
+              key={t.id}
+              coordinate={{ latitude: t.latitude, longitude: t.longitude }}
+              title={`${t.category.replace(/_/g, ' ')} • ${t.status}`}
+              description={`Severity ${t.severity}/5`}
+              pinColor={pinColorFor(t.status)}
+              onPress={() => onSelectTicket(t)}
+            />
+          ))}
+        </MapView>
+      )}
+      <View style={styles.osmCredit}>
+        <Text style={styles.osmCreditText}>© OpenStreetMap contributors</Text>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

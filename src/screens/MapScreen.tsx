@@ -12,7 +12,7 @@ import {
 import { MapPin, Navigation, ExternalLink, ShieldCheck } from 'lucide-react-native';
 import { Ticket, TicketStatus } from '../types';
 import { api } from '../services/api';
-import { InteractiveMap } from '../components/InteractiveMap';
+import { ShowMap } from '../components/showMap';
 import { StatusBadge } from '../components/StatusBadge';
 import { SeverityMeter } from '../components/SeverityMeter';
 import { calculateHaversineDistance, getCurrentGPS, DELHI_WARD_14, LUDHIANA_CASE_STUDY } from '../services/location';
@@ -304,7 +304,7 @@ export const MapScreen: React.FC = () => {
         </TouchableOpacity>
       )}
       <View style={styles.mapViewport}>
-        <InteractiveMap
+        <ShowMap
           tickets={filteredTickets}
           selectedTicket={selectedTicket}
           onSelectTicket={(ticket) => setSelectedTicket(ticket)}
