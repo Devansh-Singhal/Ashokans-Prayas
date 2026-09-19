@@ -23,6 +23,7 @@ import {
   Edit3,
   ShieldAlert,
   ChevronDown,
+  X,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -57,7 +58,12 @@ const CURATED_DEMO_SAMPLES = [
   },
 ];
 
-export const ReportScreen: React.FC = () => {
+interface ReportScreenProps {
+  onClose?: () => void;
+  onSuccess?: () => void;
+}
+
+export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }) => {
   const { currentUser, updatePoints } = useAuth();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoKind, setPhotoKind] = useState<'local' | 'remote' | null>(null);
@@ -213,6 +219,10 @@ export const ReportScreen: React.FC = () => {
       );
       updatePoints(res?.escrow_points ?? 50);
 
+      if (onSuccess) {
+        setTimeout(() => onSuccess(), 1800);
+      }
+
       timer.current = setTimeout(() => {
         setIsSuccess(false);
         setPhotoUri(null);
@@ -251,6 +261,12 @@ export const ReportScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
+        {onClose && (
+          <TouchableOpacity onPress={onClose} style={styles.closeBtnHeader} activeOpacity={0.7}>
+            <X size={16} color="#0F172A" />
+            <Text style={styles.closeBtnHeaderText}>Back to Feed</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.title}>Report Civic Hazard</Text>
         <Text style={styles.subtitle}>
           DeepSeek 4.1 Vision analyzes the photograph, maps it to the exact responsible government department, and requires your confirmation before publishing.
@@ -957,5 +973,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     lineHeight: 16,
+  },
+  closeBtnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  closeBtnHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
 });

@@ -13,7 +13,7 @@ except ImportError:
     pass
 
 from app.db import init_db
-from app.routers import auth, feed, tickets
+from app.routers import auth, certificates, feed, tickets
 
 
 @asynccontextmanager
@@ -36,6 +36,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(tickets.router)
 app.include_router(feed.router)
+app.include_router(certificates.router)
 
 _UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "uploads")
 os.makedirs(_UPLOAD_DIR, exist_ok=True)

@@ -236,7 +236,7 @@ async def classify_image(filename: str, content: bytes, content_type: str = "ima
     payload = {
         "model": PROVIDER_MODEL,
         "temperature": 0.1,
-        "max_tokens": 1500,
+        "max_tokens": 2048,
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},

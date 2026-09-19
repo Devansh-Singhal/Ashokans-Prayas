@@ -313,6 +313,26 @@ export class CivicFeedApi {
       recent_trend: data.ward_cleanliness_score >= 70 ? 'improving' : 'stable',
     };
   }
+
+  async getUserTasks(userId: string) {
+    const res = await timedFetch(`${this.baseUrl}/certificates/user-tasks?user_id=${encodeURIComponent(userId)}`);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch user tasks (${res.status})`);
+    }
+    return res.json();
+  }
+
+  async generateCertificate(userId: string) {
+    const res = await timedFetch(`${this.baseUrl}/certificates/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to generate certificate (${res.status})`);
+    }
+    return res.json();
+  }
 }
 
 export const api = new CivicFeedApi();
