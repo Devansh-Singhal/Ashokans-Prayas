@@ -13,6 +13,7 @@
  * Any other args are forwarded to `expo start` (e.g. `npm run tunnel -- --clear`).
  */
 const { spawn } = require('node:child_process');
+const net = require('node:net');
 const path = require('node:path');
 
 const PORT = process.env.EXPO_PORT || '8081';
@@ -51,6 +52,32 @@ function shutdown(code) {
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
+// Metro's own EADDRINUSE arrives as an unreadable stack trace after the tunnel
+// is already up, so check the port before starting anything.
+function assertPortFree() {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection({ host: '127.0.0.1', port: Number(PORT) });
+    const free = () => {
+      socket.destroy();
+      resolve();
+    };
+    socket.setTimeout(1500);
+    socket.on('error', free);
+    socket.on('timeout', free);
+    socket.on('connect', () => {
+      socket.destroy();
+      reject(
+        new Error(
+          [
+            `Port ${PORT} is already in use -- another Metro/Expo instance is running.`,
+            `Close it, or use another port: EXPO_PORT=8082 npm run tunnel`,
+          ].join('\n')
+        )
+      );
+    });
+  });
+}
+
 function startTunnel() {
   return new Promise((resolve, reject) => {
     const args = hostname
@@ -76,16 +103,12 @@ function startTunnel() {
       );
     });
 
-    const timer = setTimeout(
-      () => reject(new Error('Tunnel did not come up within 60s.')),
-      60000
-    );
+    const timer = setTimeout(() => reject(new Error('Tunnel did not come up within 60s.')), 60000);
 
     let settled = false;
     const ready = hostname ? CONNECTED_RE : QUICK_URL_RE;
     const scan = (buf) => {
-      const text = buf.toString();
-      const match = text.match(ready);
+      const match = buf.toString().match(ready);
       if (!match || settled) return;
       settled = true;
       clearTimeout(timer);
@@ -116,7 +139,10 @@ function startExpo(url) {
   expo.on('exit', (code) => shutdown(code ?? 0));
 }
 
-startTunnel().then(startExpo, (err) => {
-  console.error(`\n${err.message}\n`);
-  shutdown(1);
-});
+assertPortFree()
+  .then(startTunnel)
+  .then(startExpo)
+  .catch((err) => {
+    console.error(`\n${err.message}\n`);
+    shutdown(1);
+  });
