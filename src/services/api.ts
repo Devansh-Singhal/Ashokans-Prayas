@@ -1,5 +1,16 @@
 import { Ticket, User, VerificationResult, WardScorecard } from '../types';
 
+let PlatformOS = typeof window === 'undefined' ? 'node' : 'web';
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const RN = require('react-native');
+  if (RN && RN.Platform && RN.Platform.OS) {
+    PlatformOS = RN.Platform.OS;
+  }
+} catch {
+  // Running in pure Node.js test environment
+}
+
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 async function appendPhoto(formData: FormData, fieldName: string, photoUri: string, defaultName: string) {
@@ -10,6 +21,19 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1]}` : 'image/jpeg';
 
+  // 1. Web browser environment: browser FormData expects a genuine Blob
+  if (PlatformOS === 'web' || (typeof window !== 'undefined' && !(window as any).navigator?.product?.includes('ReactNative'))) {
+    try {
+      const response = await fetch(photoUri);
+      const blob = await response.blob();
+      formData.append(fieldName, blob, filename.toLowerCase().includes('pothole') || filename.toLowerCase().includes('fix') ? filename : defaultName);
+      return;
+    } catch (err) {
+      console.warn('Web fetch blob fallback', err);
+    }
+  }
+
+  // 2. Node.js test environment (tsx / jest)
   if (typeof window === 'undefined' && typeof Blob !== 'undefined') {
     if (photoUri.startsWith('http://') || photoUri.startsWith('https://')) {
       try {
@@ -36,13 +60,16 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
     ]);
     const blob = new Blob([dummyJpeg], { type: 'image/jpeg' });
     formData.append(fieldName, blob, defaultName);
-  } else {
-    formData.append(fieldName, {
-      uri: photoUri,
-      name: filename,
-      type,
-    } as any);
+    return;
   }
+
+  // 3. React Native Mobile (iOS / Android)
+  const cleanUri = PlatformOS === 'ios' ? photoUri.replace('file://', '') : photoUri;
+  formData.append(fieldName, {
+    uri: cleanUri,
+    name: filename,
+    type,
+  } as any);
 }
 
 export class CivicFeedApi {

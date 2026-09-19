@@ -33,8 +33,8 @@ export const AntiCheatModal: React.FC<Props> = ({ visible, result, onClose }) =>
 
           <Text style={styles.title}>
             {isCollusion
-              ? '⚠️ Anti-Collusion Protection Activated'
-              : '🎉 Verified Clean & Credited!'}
+              ? 'Anti-Collusion Protection Activated'
+              : 'Verified Clean & Credited!'}
           </Text>
 
           <Text style={styles.subtitle}>

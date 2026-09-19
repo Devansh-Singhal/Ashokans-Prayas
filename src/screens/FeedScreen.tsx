@@ -9,11 +9,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { CivicPostCard } from '../components/CivicPostCard';
+import { CivicOnboardingCard } from '../components/CivicOnboardingCard';
 import { AntiCheatModal } from '../components/AntiCheatModal';
 import { Ticket, TicketCategory, VerificationResult } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, Filter } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 
 export const FeedScreen: React.FC = () => {
   const { currentUser, updatePoints } = useAuth();
@@ -60,7 +61,7 @@ export const FeedScreen: React.FC = () => {
       // Execute live audit verification
       const sampleAuditPhoto = 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80';
       const result = await api.verifyTicket(ticket.id, sampleAuditPhoto, currentUser.id);
-      
+
       setVerificationResult(result);
       setIsModalVisible(true);
       updatePoints(result.credited_points);
@@ -111,7 +112,7 @@ export const FeedScreen: React.FC = () => {
         />
       </View>
 
-      {/* Social Post Feed */}
+      {/* Social Post Feed with Embedded Onboarding Header */}
       {isLoading ? (
         <View style={styles.loadingCenter}>
           <ActivityIndicator size="large" color="#0F172A" />
@@ -121,6 +122,8 @@ export const FeedScreen: React.FC = () => {
         <FlatList
           data={filteredTickets}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={<CivicOnboardingCard />}
+          contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <CivicPostCard
               ticket={item}
@@ -183,6 +186,9 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: '#FFFFFF',
   },
+  listContent: {
+    paddingBottom: 130, // Safe mobile inset to prevent buttons clipping behind bottom tab bar
+  },
   loadingCenter: {
     flex: 1,
     justifyContent: 'center',
@@ -195,7 +201,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyState: {
-    paddingTop: 80,
+    paddingTop: 60,
     alignItems: 'center',
     paddingHorizontal: 40,
   },

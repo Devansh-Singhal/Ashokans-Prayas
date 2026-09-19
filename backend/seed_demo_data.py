@@ -29,10 +29,13 @@ async def seed():
                     points_balance=pts
                 )
                 session.add(u)
+            else:
+                existing.public_handle = handle
+                existing.points_balance = pts
         
         await session.flush()
         
-        # 2. Seed 6 realistic Ward 14 tickets
+        # 2. Seed 6 authentic Ward 14 tickets with real urban infrastructure photos
         now = datetime.now(timezone.utc)
         
         tickets_data = [
@@ -46,7 +49,8 @@ async def seed():
                 "latitude": 28.6289,
                 "longitude": 77.2065,
                 "upvotes_count": 34,
-                "report_photo_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&q=80",
+                # Deep asphalt road fracture on high-traffic urban corridor
+                "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",
                 "created_at": now - timedelta(hours=2, minutes=15)
             },
             {
@@ -59,8 +63,9 @@ async def seed():
                 "latitude": 28.6295,
                 "longitude": 77.2072,
                 "upvotes_count": 18,
-                "report_photo_url": "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=800&q=80",
-                "resolution_photo_url": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80",
+                # Municipal street waste heap before, and freshly swept curb after
+                "report_photo_url": "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=1200&q=80",
+                "resolution_photo_url": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=1200&q=80",
                 "created_at": now - timedelta(hours=5)
             },
             {
@@ -73,7 +78,8 @@ async def seed():
                 "latitude": 28.6275,
                 "longitude": 77.2050,
                 "upvotes_count": 12,
-                "report_photo_url": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=800&q=80",
+                # Defunct municipal street light fixture
+                "report_photo_url": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=1200&q=80",
                 "created_at": now - timedelta(hours=14)
             },
             {
@@ -86,7 +92,8 @@ async def seed():
                 "latitude": 28.6310,
                 "longitude": 77.2085,
                 "upvotes_count": 27,
-                "report_photo_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&q=80",
+                # Waterlogged asphalt road completely submerged during monsoon
+                "report_photo_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&q=80",
                 "created_at": now - timedelta(days=1, hours=3)
             },
             {
@@ -99,7 +106,8 @@ async def seed():
                 "latitude": 28.6268,
                 "longitude": 77.2040,
                 "upvotes_count": 48,
-                "report_photo_url": "https://images.unsplash.com/photo-1584467735815-f778f274e296?w=800&q=80",
+                # Uncovered roadside concrete drainage slab ditch
+                "report_photo_url": "https://images.unsplash.com/photo-1584467735815-f778f274e296?w=1200&q=80",
                 "created_at": now - timedelta(days=2)
             },
             {
@@ -112,8 +120,9 @@ async def seed():
                 "latitude": 28.6280,
                 "longitude": 77.2060,
                 "upvotes_count": 56,
-                "report_photo_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&q=80",
-                "resolution_photo_url": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80",
+                # Pothole before, and rolled asphalt patch after
+                "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",
+                "resolution_photo_url": "https://images.unsplash.com/photo-1584463699042-452304918e77?w=1200&q=80",
                 "created_at": now - timedelta(days=4),
                 "resolved_at": now - timedelta(days=1)
             }
@@ -124,9 +133,12 @@ async def seed():
             if not existing:
                 t = Ticket(**td)
                 session.add(t)
+            else:
+                for k, v in td.items():
+                    setattr(existing, k, v)
                 
         await session.commit()
-        print("✅ Demo personas and 6 Ward 14 civic tickets successfully seeded!")
+        print("Demo personas and 6 Ward 14 civic tickets successfully seeded with authentic infrastructure photos!")
 
 if __name__ == "__main__":
     asyncio.run(seed())

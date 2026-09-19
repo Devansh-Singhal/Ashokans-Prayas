@@ -15,18 +15,22 @@ export const BeforeAfterView: React.FC<Props> = ({ beforeUrl, afterUrl }) => {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'before' && styles.activeTab]}
           onPress={() => setActiveTab('before')}
+          activeOpacity={0.8}
         >
+          <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
           <Text style={[styles.tabText, activeTab === 'before' && styles.activeTabText]}>
-            🔴 Before (Reported)
+            BEFORE (Reported)
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.tab, activeTab === 'after' && styles.activeTab]}
           onPress={() => setActiveTab('after')}
+          activeOpacity={0.8}
         >
+          <View style={[styles.dot, { backgroundColor: '#10B981' }]} />
           <Text style={[styles.tabText, activeTab === 'after' && styles.activeTabText]}>
-            🟢 After (Fix Uploaded)
+            AFTER (Fix Uploaded)
           </Text>
         </TouchableOpacity>
       </View>
@@ -39,7 +43,7 @@ export const BeforeAfterView: React.FC<Props> = ({ beforeUrl, afterUrl }) => {
         />
         <View style={styles.pillOverlay}>
           <Text style={styles.pillText}>
-            {activeTab === 'before' ? 'ORIGINAL DEFECT' : 'PROVISIONAL REPAIR'}
+            {activeTab === 'before' ? 'ORIGINAL CITIZEN REPORT' : 'CONTRACTOR PROVISIONAL REPAIR'}
           </Text>
         </View>
       </View>
@@ -57,15 +61,19 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#E2E8F0',
-    padding: 3,
+    padding: 4,
     borderRadius: 10,
     margin: 8,
+    gap: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: 6,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
     borderRadius: 8,
+    gap: 6,
   },
   activeTab: {
     backgroundColor: '#FFFFFF',
@@ -75,10 +83,16 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
   tabText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
+    letterSpacing: 0.3,
   },
   activeTabText: {
     color: '#0F172A',

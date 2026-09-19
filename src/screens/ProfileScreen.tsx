@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+    paddingBottom: 130,
   },
   profileHero: {
     alignItems: 'center',

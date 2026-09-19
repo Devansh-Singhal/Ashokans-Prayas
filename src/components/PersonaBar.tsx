@@ -1,10 +1,18 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Modal,
+} from 'react-native';
 import { useAuth, DEMO_PERSONAS } from '../context/AuthContext';
-import { Users2, Award } from 'lucide-react-native';
+import { Award, Info, X, ShieldCheck, UserCheck, Smartphone } from 'lucide-react-native';
 
 export const PersonaBar: React.FC = () => {
   const { currentPersona, switchPersona, currentUser } = useAuth();
+  const [showExplainer, setShowExplainer] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -12,7 +20,16 @@ export const PersonaBar: React.FC = () => {
         <View style={styles.liveTag}>
           <View style={styles.liveDot} />
           <Text style={styles.liveText}>STAGE DEMO PERSONA</Text>
+          <TouchableOpacity
+            style={styles.infoButton}
+            onPress={() => setShowExplainer(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <Info size={13} color="#38BDF8" />
+          </TouchableOpacity>
         </View>
+
         <View style={styles.pointsBadge}>
           <Award size={13} color="#F59E0B" />
           <Text style={styles.pointsText}>{currentUser.points_balance} pts</Text>
@@ -32,7 +49,12 @@ export const PersonaBar: React.FC = () => {
               onPress={() => switchPersona(p.id)}
               activeOpacity={0.7}
             >
-              <View style={[styles.avatar, { backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : p.avatarColor }]}>
+              <View
+                style={[
+                  styles.avatar,
+                  { backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : p.avatarColor },
+                ]}
+              >
                 <Text style={styles.avatarLetter}>{p.name.charAt(0)}</Text>
               </View>
               <View>
@@ -47,6 +69,86 @@ export const PersonaBar: React.FC = () => {
           );
         })}
       </ScrollView>
+
+      {/* Stage Demo Explainer Modal */}
+      <Modal
+        visible={showExplainer}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExplainer(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleGroup}>
+                <Smartphone size={18} color="#38BDF8" />
+                <Text style={styles.modalTitle}>Why Demo Personas?</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowExplainer(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <X size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalIntro}>
+              CivicFeed enforces physical GPS geofencing. In production, users log in via mobile OTP.
+              For this stage demonstration, switch personas instantly to evaluate different civic roles
+              on a single device:
+            </Text>
+
+            <View style={styles.personasOverview}>
+              {/* Rahul */}
+              <View style={styles.personaRow}>
+                <View style={[styles.personaIconBox, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
+                  <Text style={[styles.personaInit, { color: '#4F46E5' }]}>R</Text>
+                </View>
+                <View style={styles.personaTextGroup}>
+                  <Text style={styles.personaNameLabel}>Rahul (Citizen Reporter)</Text>
+                  <Text style={styles.personaDesc}>
+                    Can photograph new defects and tap &quot;I Hit This Too!&quot; to escalate SLA priorities (+25 / +50 pts).
+                  </Text>
+                </View>
+              </View>
+
+              {/* Anjali */}
+              <View style={styles.personaRow}>
+                <View style={[styles.personaIconBox, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+                  <Text style={[styles.personaInit, { color: '#059669' }]}>A</Text>
+                </View>
+                <View style={styles.personaTextGroup}>
+                  <Text style={styles.personaNameLabel}>Anjali (Passerby Auditor)</Text>
+                  <Text style={styles.personaDesc}>
+                    Positioned within 30m of the provisional fix on 80ft Road. Performs the ground truth audit to close tickets (+150 pts).
+                  </Text>
+                </View>
+              </View>
+
+              {/* Rohan */}
+              <View style={styles.personaRow}>
+                <View style={[styles.personaIconBox, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+                  <Text style={[styles.personaInit, { color: '#D97706' }]}>Ro</Text>
+                </View>
+                <View style={styles.personaTextGroup}>
+                  <Text style={styles.personaNameLabel}>Rohan (Under-18 Minor)</Text>
+                  <Text style={styles.personaDesc}>
+                    Triggers the automated parent consent token flow and tests anti-collusion reciprocity decay algorithms.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowExplainer(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalCloseText}>Understood</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -82,6 +184,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  infoButton: {
+    padding: 2,
+    borderRadius: 4,
   },
   pointsBadge: {
     flexDirection: 'row',
@@ -124,8 +230,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   personaName: {
-    color: '#E2E8F0',
-    fontSize: 12,
+    color: '#F8FAFC',
+    fontSize: 11,
     fontWeight: '700',
   },
   personaNameActive: {
@@ -134,9 +240,100 @@ const styles = StyleSheet.create({
   personaRole: {
     color: '#94A3B8',
     fontSize: 9,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   personaRoleActive: {
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(255,255,255,0.85)',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
+    width: '100%',
+    maxWidth: 420,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 10,
+  },
+  modalTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalIntro: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  personasOverview: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  personaRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  personaIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  personaInit: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  personaTextGroup: {
+    flex: 1,
+  },
+  personaNameLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  personaDesc: {
+    fontSize: 11,
+    color: '#64748B',
+    lineHeight: 16,
+  },
+  modalCloseButton: {
+    backgroundColor: '#0F172A',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

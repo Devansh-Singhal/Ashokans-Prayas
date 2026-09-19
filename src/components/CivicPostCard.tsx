@@ -6,17 +6,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   Share,
+  Modal,
 } from 'react-native';
 import {
   MapPin,
-  Flame,
   CheckCircle2,
   Share2,
-  AlertCircle,
-  Trash2,
-  Sun,
-  Droplets,
   ShieldCheck,
+  Info,
+  X,
+  TrendingUp,
+  Clock,
+  Award,
 } from 'lucide-react-native';
 import { Ticket, TicketCategory } from '../types';
 import { SeverityMeter } from './SeverityMeter';
@@ -24,6 +25,14 @@ import { StatusBadge } from './StatusBadge';
 import { BeforeAfterView } from './BeforeAfterView';
 import { GeofencePill } from './GeofencePill';
 import { calculateHaversineDistance } from '../services/location';
+import {
+  ImpactFlameIcon,
+  MonsoonPauseIcon,
+  PotholeDefectIcon,
+  WasteAccumulationIcon,
+  StreetlightDefectIcon,
+  OpenDrainHazardIcon,
+} from './CivicIcons';
 
 interface Props {
   ticket: Ticket;
@@ -44,6 +53,7 @@ export const CivicPostCard: React.FC<Props> = ({
   const [hasEndorsed, setHasEndorsed] = useState(false);
   const [isEndorsing, setIsEndorsing] = useState(false);
   const [showBonus, setShowBonus] = useState(false);
+  const [showEscalationModal, setShowEscalationModal] = useState(false);
 
   const distance = calculateHaversineDistance(
     userCoords.latitude,
@@ -55,15 +65,15 @@ export const CivicPostCard: React.FC<Props> = ({
   const getCategoryIcon = (cat: TicketCategory) => {
     switch (cat) {
       case 'POTHOLE':
-        return <AlertCircle size={15} color="#DC2626" />;
+        return <PotholeDefectIcon size={16} color="#EF4444" />;
       case 'GARBAGE_ACCUMULATION':
-        return <Trash2 size={15} color="#D97706" />;
+        return <WasteAccumulationIcon size={16} color="#F59E0B" />;
       case 'STREETLIGHT':
-        return <Sun size={15} color="#EAB308" />;
+        return <StreetlightDefectIcon size={16} color="#EAB308" />;
       case 'OPEN_DRAIN':
-        return <Droplets size={15} color="#2563EB" />;
+        return <OpenDrainHazardIcon size={16} color="#0284C7" />;
       default:
-        return <AlertCircle size={15} color="#64748B" />;
+        return <MapPin size={16} color="#64748B" />;
     }
   };
 
@@ -100,7 +110,7 @@ export const CivicPostCard: React.FC<Props> = ({
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `🚨 Civic Alert on CivicFeed: ${ticket.category} (Severity ${ticket.severity}/5) at Ward 14. Status: ${ticket.status}. Verify and track: https://civicfeed.org/t/${ticket.id}`,
+        message: `[CivicFeed Alert] ${ticket.category} (Severity ${ticket.severity}/5) at Ward 14 Delhi. Status: ${ticket.status}. Verify and track: https://civicfeed.org/t/${ticket.id}`,
       });
     } catch {
       // dismissed
@@ -143,7 +153,7 @@ export const CivicPostCard: React.FC<Props> = ({
       <View style={styles.locationRow}>
         <MapPin size={13} color="#64748B" />
         <Text style={styles.locationText} numberOfLines={1}>
-          {ticket.latitude.toFixed(4)}, {ticket.longitude.toFixed(4)} • Near Sony Signal Corridor
+          {ticket.latitude.toFixed(4)}, {ticket.longitude.toFixed(4)} • Near Central Delhi Corridor
         </Text>
       </View>
 
@@ -162,8 +172,9 @@ export const CivicPostCard: React.FC<Props> = ({
           />
           {ticket.status === 'WEATHER_OCCLUDED' && (
             <View style={styles.weatherBanner}>
+              <MonsoonPauseIcon size={16} color="#38BDF8" />
               <Text style={styles.weatherBannerText}>
-                🌧️ Pothole submerged by rainwater. Closure paused for safety.
+                Monsoon Pause • Submerged road hazard. SLA paused until drainage clears.
               </Text>
             </View>
           )}
@@ -177,57 +188,144 @@ export const CivicPostCard: React.FC<Props> = ({
         </View>
       )}
 
-      {/* 6. Social Action Bar */}
-      <View style={styles.actionBar}>
-        {/* Endorse / I Hit This Too! */}
-        <TouchableOpacity
-          style={[styles.actionButton, hasEndorsed && styles.actionButtonActive]}
-          onPress={handleEndorse}
-          activeOpacity={0.7}
-        >
-          <Flame size={17} color={hasEndorsed ? '#EA580C' : '#64748B'} />
-          <Text style={[styles.actionText, hasEndorsed && styles.actionTextActive]}>
-            I Hit This Too! ({upvotes})
-          </Text>
-          {showBonus && (
-            <View style={styles.floatingBonus}>
-              <Text style={styles.floatingBonusText}>+25 pts!</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* Verify Fix Action */}
-        {canVerify ? (
+      {/* 6. Social Action & Civic Endorsement Area */}
+      <View style={styles.actionContainer}>
+        <View style={styles.endorseWrapper}>
           <TouchableOpacity
-            style={[
-              styles.verifyButton,
-              distance <= 50 ? styles.verifyButtonActive : styles.verifyButtonDisabled,
-            ]}
-            onPress={() => onVerifyPress(ticket)}
-            disabled={distance > 50}
-            activeOpacity={0.8}
+            style={[styles.endorseButton, hasEndorsed && styles.endorseButtonActive]}
+            onPress={handleEndorse}
+            activeOpacity={0.7}
           >
-            <ShieldCheck size={16} color="#FFFFFF" />
-            <Text style={styles.verifyButtonText}>
-              {distance <= 50 ? 'Audit Fix (+150p)' : 'Move Closer'}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.resolvedBadgeHolder}>
-            {ticket.status === 'RESOLVED' && (
-              <View style={styles.closedTag}>
-                <CheckCircle2 size={14} color="#16A34A" />
-                <Text style={styles.closedTagText}>Verified Clean</Text>
+            <ImpactFlameIcon
+              size={18}
+              color={hasEndorsed ? '#EA580C' : '#64748B'}
+              fill={hasEndorsed ? '#EA580C' : 'none'}
+            />
+            <View style={styles.endorseTextColumn}>
+              <View style={styles.endorseTitleRow}>
+                <Text style={[styles.endorseTitle, hasEndorsed && styles.endorseTitleActive]}>
+                  I Hit This Too! ({upvotes})
+                </Text>
+              </View>
+              <Text style={styles.endorseSubtitle}>
+                Endorse hazard • Escalates repair SLA (+25 pts)
+              </Text>
+            </View>
+
+            {showBonus && (
+              <View style={styles.floatingBonus}>
+                <Text style={styles.floatingBonusText}>+25 pts!</Text>
               </View>
             )}
-          </View>
-        )}
+          </TouchableOpacity>
 
-        {/* Share Button */}
-        <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
-          <Share2 size={16} color="#64748B" />
-        </TouchableOpacity>
+          {/* Info trigger for "I Hit This Too!" mechanic */}
+          <TouchableOpacity
+            style={styles.infoTrigger}
+            onPress={() => setShowEscalationModal(true)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
+          >
+            <Info size={16} color="#94A3B8" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Secondary Actions: Verify Fix or Share */}
+        <View style={styles.secondaryActions}>
+          {canVerify ? (
+            <TouchableOpacity
+              style={[
+                styles.verifyButton,
+                distance <= 50 ? styles.verifyButtonActive : styles.verifyButtonDisabled,
+              ]}
+              onPress={() => onVerifyPress(ticket)}
+              disabled={distance > 50}
+              activeOpacity={0.8}
+            >
+              <ShieldCheck size={16} color="#FFFFFF" />
+              <Text style={styles.verifyButtonText}>
+                {distance <= 50 ? 'Audit Fix (+150p)' : 'Move Within 50m'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            ticket.status === 'RESOLVED' && (
+              <View style={styles.resolvedBadge}>
+                <CheckCircle2 size={14} color="#16A34A" />
+                <Text style={styles.resolvedText}>Verified Clean</Text>
+              </View>
+            )
+          )}
+
+          <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.8}>
+            <Share2 size={16} color="#64748B" />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* 7. Civic SLA Escalation Explainer Modal */}
+      <Modal
+        visible={showEscalationModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEscalationModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleGroup}>
+                <ImpactFlameIcon size={20} color="#EA580C" fill="#EA580C" />
+                <Text style={styles.modalTitle}>Why tap &quot;I Hit This Too!&quot;?</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowEscalationModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={20} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.modalPoint}>
+                <TrendingUp size={18} color="#EA580C" style={styles.pointIcon} />
+                <View style={styles.pointTextGroup}>
+                  <Text style={styles.pointHeading}>Priority Escalation</Text>
+                  <Text style={styles.pointDescription}>
+                    Every citizen endorsement moves this hazard up the municipal repair priority queue.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.modalPoint}>
+                <Clock size={18} color="#0284C7" style={styles.pointIcon} />
+                <View style={styles.pointTextGroup}>
+                  <Text style={styles.pointHeading}>48-Hour SLA Trigger</Text>
+                  <Text style={styles.pointDescription}>
+                    Defects with 5+ endorsements trigger the Municipal Rapid Response SLA, cutting repair turnaround from 7 days to 48 hours.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.modalPoint}>
+                <Award size={18} color="#10B981" style={styles.pointIcon} />
+                <View style={styles.pointTextGroup}>
+                  <Text style={styles.pointHeading}>Citizen Escrow Bounty</Text>
+                  <Text style={styles.pointDescription}>
+                    You immediately receive +25 civic reputation points in your Ward 14 profile for confirming the active hazard.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalConfirmButton}
+              onPress={() => setShowEscalationModal(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalConfirmText}>Got it, thanks!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -308,10 +406,10 @@ const styles = StyleSheet.create({
   categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     backgroundColor: '#F8FAFC',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -350,58 +448,81 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(30, 58, 138, 0.9)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#38BDF8',
   },
   weatherBannerText: {
-    color: '#FFFFFF',
+    color: '#E0F2FE',
     fontSize: 11,
     fontWeight: '600',
-    textAlign: 'center',
+    flex: 1,
   },
   geofenceContainer: {
     marginTop: 10,
   },
-  actionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  actionContainer: {
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+    gap: 10,
   },
-  actionButton: {
+  endorseWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+  },
+  endorseButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F8FAFC',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     position: 'relative',
+    gap: 10,
+    minHeight: 52,
   },
-  actionButtonActive: {
+  endorseButtonActive: {
     backgroundColor: '#FFF7ED',
     borderColor: '#FDBA74',
   },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
+  endorseTextColumn: {
+    flex: 1,
   },
-  actionTextActive: {
+  endorseTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  endorseTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  endorseTitleActive: {
     color: '#C2410C',
+  },
+  endorseSubtitle: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
   },
   floatingBonus: {
     position: 'absolute',
-    top: -24,
-    left: 10,
+    top: -14,
+    right: 12,
     backgroundColor: '#EA580C',
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 8,
   },
@@ -410,13 +531,32 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
   },
-  verifyButton: {
+  infoTrigger: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secondaryActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  verifyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
+    minHeight: 46,
   },
   verifyButtonActive: {
     backgroundColor: '#059669',
@@ -429,27 +569,105 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  resolvedBadgeHolder: {
+  resolvedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  closedTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    gap: 5,
     backgroundColor: '#F0FDF4',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
-  closedTagText: {
+  resolvedText: {
     color: '#16A34A',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
-  iconButton: {
-    padding: 8,
-    borderRadius: 10,
+  shareButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 12,
+  },
+  modalTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalBody: {
+    gap: 14,
+    marginBottom: 20,
+  },
+  modalPoint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  pointIcon: {
+    marginTop: 2,
+  },
+  pointTextGroup: {
+    flex: 1,
+  },
+  pointHeading: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  pointDescription: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  modalConfirmButton: {
+    backgroundColor: '#0F172A',
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
