@@ -68,6 +68,20 @@ export const MapScreen: React.FC = () => {
   const [usingFallback, setUsingFallback] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const loadTickets = async () => {
+    try {
+      setLoadError(null);
+      const res = await api.getWardFeed(ward.wardId);
+      setTickets(res.tickets);
+      if (res.tickets.length > 0) {
+        setSelectedTicket(res.tickets[0]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load tickets for map', err);
+      setLoadError(err?.message || 'Failed to load tickets');
+    }
+  };
+
   useEffect(() => {
     setSelectedTicket(null);
     loadTickets();
@@ -84,20 +98,6 @@ export const MapScreen: React.FC = () => {
       }
     })();
   }, []);
-
-  const loadTickets = async () => {
-    try {
-      setLoadError(null);
-      const res = await api.getWardFeed(ward.wardId);
-      setTickets(res.tickets);
-      if (res.tickets.length > 0) {
-        setSelectedTicket(res.tickets[0]);
-      }
-    } catch (err: any) {
-      console.error('Failed to load tickets for map', err);
-      setLoadError(err?.message || 'Failed to load tickets');
-    }
-  };
 
   const filteredTickets = useMemo(() => {
     if (activeFilter === 'ALL') return tickets;

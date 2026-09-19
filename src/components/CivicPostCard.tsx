@@ -70,9 +70,13 @@ export const CivicPostCard: React.FC<Props> = ({
     }
   };
 
+  // Captured once at mount: reading the clock during render is impure and
+  // makes the React Compiler's memoization unstable.
+  const [nowMs] = React.useState(() => Date.now());
+
   const formatTimeAgo = (dateStr: string) => {
     try {
-      const diffSec = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+      const diffSec = Math.floor((nowMs - new Date(dateStr).getTime()) / 1000);
       if (diffSec < 60) return 'Just now';
       if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
       if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;

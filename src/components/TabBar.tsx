@@ -1,60 +1,43 @@
-import { useRouter, useSegments } from 'expo-router';
-import { Home, Search, Camera, Settings } from 'lucide-react-native';
+import { usePathname, useRouter } from 'expo-router';
+import { BarChart3, Camera, Map, Newspaper, User } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS } from '@/constants/colors';
 
 const TABS = [
-  { name: 'index', label: 'Home', icon: Home },
-  { name: 'search', label: 'Search', icon: Search },
-  { name: 'camera', label: 'Camera', icon: Camera },
-  { name: 'settings', label: 'Settings', icon: Settings },
-];
+  { path: '/', label: 'Feed', icon: Newspaper },
+  { path: '/map', label: 'Map', icon: Map },
+  { path: '/report', label: 'Report', icon: Camera },
+  { path: '/scorecard', label: 'Ward', icon: BarChart3 },
+  { path: '/profile', label: 'Profile', icon: User },
+] as const;
 
 export function TabBar() {
   const router = useRouter();
-  const segments = useSegments();
-
-  // Get the current tab by checking the last segment
-  const currentTab = segments[segments.length - 1] || 'index';
-
-  const handleTabPress = (tabName: string) => {
-    if (tabName === 'index') {
-      router.push('/');
-    } else {
-      router.push(`/${tabName}` as any);
-    }
-  };
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom || 8 }]}>
       {TABS.map((tab) => {
-        const isFocused = currentTab === tab.name;
+        const isFocused = pathname === tab.path;
         const IconComponent = tab.icon;
 
         return (
           <Pressable
-            key={tab.name}
-            onPress={() => handleTabPress(tab.name)}
+            key={tab.path}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isFocused }}
+            accessibilityLabel={tab.label}
+            // navigate (not push) so tapping tabs never stacks history
+            onPress={() => router.navigate(tab.path)}
             style={styles.tabItem}
           >
-            <View
-              style={[
-                styles.iconContainer,
-                isFocused && styles.iconContainerActive,
-              ]}
-            >
-              <IconComponent
-                size={24}
-                color={isFocused ? COLORS.white : COLORS.lightGray}
-              />
+            <View style={[styles.iconContainer, isFocused && styles.iconContainerActive]}>
+              <IconComponent size={22} color={isFocused ? COLORS.white : COLORS.lightGray} />
             </View>
-            <Text
-              style={[
-                styles.label,
-                isFocused && styles.labelActive,
-              ]}
-            >
+            <Text numberOfLines={1} style={[styles.label, isFocused && styles.labelActive]}>
               {tab.label}
             </Text>
           </Pressable>
@@ -67,24 +50,22 @@ export function TabBar() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: 80,
     backgroundColor: COLORS.navDark,
     borderTopWidth: 1,
     borderTopColor: COLORS.contentDark,
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingBottom: 8,
+    paddingTop: 8,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.contentDark,
@@ -93,7 +74,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.orange,
   },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.lightGray,
     marginTop: 4,
     fontWeight: '500',

@@ -43,7 +43,8 @@ export const ParentConsentModal: React.FC = () => {
           </View>
 
           <Text style={styles.notice}>
-            "Your child requested permission to participate in accredited school civic infrastructure auditing with CivicFeed."
+            &ldquo;Your child requested permission to participate in accredited school civic
+            infrastructure auditing with CivicFeed.&rdquo;
           </Text>
 
           <TouchableOpacity style={styles.approveButton} onPress={handleSimulate} disabled={isApproving}>
