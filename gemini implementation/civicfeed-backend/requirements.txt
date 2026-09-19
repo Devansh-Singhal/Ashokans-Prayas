@@ -1,0 +1,11 @@
+fastapi==0.138.1
+uvicorn[standard]
+sqlalchemy==2.0.51
+aiosqlite==0.22.1
+pydantic>=2.0
+httpx
+python-multipart==0.0.32
+python-dotenv
+pillow
+pytest
+pytest-asyncio
