@@ -2,11 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Platform, Text, TouchableOpacity } from 'react-native';
 import { Ticket } from '../types';
 
+interface MapArea {
+  center: { latitude: number; longitude: number };
+  zoom: number;
+  pillLabel: string;
+  radarTitle: string;
+  radarSubtitle: string;
+  userPopupPlace: string;
+  iframeTitle: string;
+}
+
 interface Props {
   tickets: Ticket[];
   selectedTicket: Ticket | null;
   onSelectTicket: (ticket: Ticket) => void;
   userCoords?: { latitude: number; longitude: number };
+  area?: MapArea;
 }
 
 export const InteractiveMap: React.FC<Props> = ({
@@ -14,7 +25,15 @@ export const InteractiveMap: React.FC<Props> = ({
   selectedTicket,
   onSelectTicket,
   userCoords = { latitude: 28.6289, longitude: 77.2065 },
+  area,
 }) => {
+  const fallbackCenter = area?.center ?? userCoords;
+  const fallbackZoom = area?.zoom ?? 15;
+  const pillLabel = area?.pillLabel ?? 'WARD 14 • CENTRAL DELHI GEOSPATIAL RADAR';
+  const radarTitle = area?.radarTitle ?? 'WARD 14 GEOSPATIAL RADAR';
+  const radarSubtitlePlace = area?.radarSubtitle ?? 'Central Delhi Corridor';
+  const userPopupPlace = area?.userPopupPlace ?? 'Ward 14, Delhi';
+  const iframeTitle = area?.iframeTitle ?? 'CivicFeed Ward 14 Map';
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   // Send message to Leaflet iframe when selectedTicket changes
@@ -55,8 +74,8 @@ export const InteractiveMap: React.FC<Props> = ({
 
   // Generate self-contained Leaflet HTML with zero-shift anchor geometry
   const generateLeafletHtml = () => {
-    const centerLat = selectedTicket?.latitude ?? userCoords.latitude ?? 28.6289;
-    const centerLng = selectedTicket?.longitude ?? userCoords.longitude ?? 77.2065;
+    const centerLat = selectedTicket?.latitude ?? fallbackCenter.latitude;
+    const centerLng = selectedTicket?.longitude ?? fallbackCenter.longitude;
 
     const ticketsData = JSON.stringify(
       tickets.map((t) => ({
@@ -161,7 +180,7 @@ export const InteractiveMap: React.FC<Props> = ({
   </style>
 </head>
 <body>
-  <div class="ward-pill">WARD 14 • CENTRAL DELHI GEOSPATIAL RADAR</div>
+  <div class="ward-pill">${pillLabel}</div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -171,11 +190,12 @@ export const InteractiveMap: React.FC<Props> = ({
     const userLng = ${userCoords.longitude};
     const centerLat = ${centerLat};
     const centerLng = ${centerLng};
+    const mapZoom = ${fallbackZoom};
 
     // Initialize Map with dark tiles
     const map = L.map('map', {
       center: [centerLat, centerLng],
-      zoom: 15,
+      zoom: mapZoom,
       zoomControl: false,
     });
 
@@ -238,7 +258,7 @@ export const InteractiveMap: React.FC<Props> = ({
       iconAnchor: [8, 8],
     });
     L.marker([userLat, userLng], { icon: userIcon })
-      .bindPopup('<b style="color:#38BDF8;">Your Live GPS Location</b><br>Ward 14, Delhi')
+      .bindPopup('<b style="color:#38BDF8;">Your Live GPS Location</b><br>${userPopupPlace}')
       .addTo(map);
 
     // Plot all Tickets with fixed zero-shift anchors
@@ -285,7 +305,7 @@ export const InteractiveMap: React.FC<Props> = ({
             height: '100%',
             border: 'none',
           },
-          title: 'CivicFeed Ward 14 Map',
+          title: iframeTitle,
         })}
       </View>
     );
@@ -321,8 +341,8 @@ export const InteractiveMap: React.FC<Props> = ({
   return (
     <View style={styles.container}>
       <View style={styles.radarHeader}>
-        <Text style={styles.radarTitle}>WARD 14 GEOSPATIAL RADAR</Text>
-        <Text style={styles.radarSub}>Central Delhi Corridor (projected pins) ({tickets.length} hazards mapped)</Text>
+        <Text style={styles.radarTitle}>{radarTitle}</Text>
+        <Text style={styles.radarSub}>{radarSubtitlePlace} (projected pins) ({tickets.length} hazards mapped)</Text>
       </View>
       <View style={styles.nativeGrid}>
         {tickets.map((t, idx) => {

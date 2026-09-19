@@ -37,10 +37,12 @@ async def seed():
                 existing.public_handle = handle
         
         await session.flush()
-        
-        # 2. Seed 6 authentic Ward 14 tickets with real urban infrastructure photos
+
+        # 2. Seed 6 Ward 14 (Delhi) tickets + 5 Ludhiana Dugri/Gill corridor
+        # case-study tickets. Corridor coords sit on/near Dugri Road per
+        # OpenStreetMap (Nominatim): ~(30.8686, 75.8435) -> (30.8893, 75.8490).
         now = datetime.now(timezone.utc)
-        
+
         tickets_data = [
             {
                 "id": "ticket-pothole-1",
@@ -128,6 +130,77 @@ async def seed():
                 "resolution_photo_url": "https://images.unsplash.com/photo-1584463699042-452304918e77?w=1200&q=80",
                 "created_at": now - timedelta(days=4),
                 "resolved_at": now - timedelta(days=1)
+            },
+            # --- Ludhiana Dugri/Gill corridor case study (WARD_LUDHIANA_DUGRI) ---
+            # Excavated carriageway left unrestored after water-pipeline work;
+            # blame chain: Municipal Corporation <-> Water Board <-> contractor.
+            {
+                "id": "ticket-ludhiana-dugri-cut-1",
+                "reporter_id": "user-rahul-id",
+                "ward_id": "WARD_LUDHIANA_DUGRI",
+                "category": "POTHOLE",
+                "severity": 5,
+                "status": TicketStatus.REPORTED.value,
+                "latitude": 30.8729,
+                "longitude": 75.8439,
+                "upvotes_count": 61,
+                "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",
+                "created_at": now - timedelta(days=187)
+            },
+            {
+                "id": "ticket-ludhiana-dugri-cut-2",
+                "reporter_id": "user-anjali-id",
+                "ward_id": "WARD_LUDHIANA_DUGRI",
+                "category": "OPEN_DRAIN",
+                "severity": 4,
+                "status": TicketStatus.PROVISIONAL_FIX.value,
+                "latitude": 30.8762,
+                "longitude": 75.8448,
+                "upvotes_count": 44,
+                "report_photo_url": "https://images.unsplash.com/photo-1584467735815-f778f274e296?w=1200&q=80",
+                "resolution_photo_url": "https://images.unsplash.com/photo-1584463699042-452304918e77?w=1200&q=80",
+                "created_at": now - timedelta(days=192)
+            },
+            {
+                "id": "ticket-ludhiana-gill-cavein",
+                "reporter_id": "user-rahul-id",
+                "ward_id": "WARD_LUDHIANA_DUGRI",
+                "category": "POTHOLE",
+                "severity": 5,
+                "status": TicketStatus.REPORTED.value,
+                "latitude": 30.8811,
+                "longitude": 75.8588,
+                "upvotes_count": 52,
+                "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",
+                "created_at": now - timedelta(days=201)
+            },
+            {
+                "id": "ticket-ludhiana-gill-sewer",
+                "reporter_id": "user-anjali-id",
+                "ward_id": "WARD_LUDHIANA_DUGRI",
+                "category": "GARBAGE_ACCUMULATION",
+                "severity": 3,
+                "status": TicketStatus.REPORTED.value,
+                "latitude": 30.8849,
+                "longitude": 75.8483,
+                "upvotes_count": 29,
+                "report_photo_url": "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=1200&q=80",
+                "created_at": now - timedelta(days=176)
+            },
+            {
+                "id": "ticket-ludhiana-dugri-restored",
+                "reporter_id": "user-rahul-id",
+                "ward_id": "WARD_LUDHIANA_DUGRI",
+                "category": "POTHOLE",
+                "severity": 2,
+                "status": TicketStatus.RESOLVED.value,
+                "latitude": 30.8798,
+                "longitude": 75.8461,
+                "upvotes_count": 73,
+                "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",
+                "resolution_photo_url": "https://images.unsplash.com/photo-1584463699042-452304918e77?w=1200&q=80",
+                "created_at": now - timedelta(days=210),
+                "resolved_at": now - timedelta(days=190)
             }
         ]
         
@@ -141,7 +214,7 @@ async def seed():
                     setattr(existing, k, v)
                 
         await session.commit()
-        print("Demo personas and 6 Ward 14 civic tickets successfully seeded with authentic infrastructure photos!")
+        print("Demo personas, 6 Ward 14 tickets, and 5 Ludhiana Dugri/Gill case-study tickets seeded!")
 
 if __name__ == "__main__":
     asyncio.run(seed())
