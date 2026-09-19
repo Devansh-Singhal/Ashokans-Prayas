@@ -7,13 +7,37 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
+  TextInput,
   Alert,
 } from 'react-native';
-import { Camera, Image as ImageIcon, MapPin, Sparkles, CheckCircle2, RotateCcw, AlertCircle } from 'lucide-react-native';
+import {
+  Camera,
+  Image as ImageIcon,
+  MapPin,
+  Sparkles,
+  CheckCircle2,
+  RotateCcw,
+  AlertCircle,
+  Building2,
+  HelpCircle,
+  Edit3,
+  ShieldAlert,
+  ChevronDown,
+} from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+
+const STANDARD_DEPARTMENTS = [
+  'Public Works Department (State PWD) - Arterial Road Division',
+  'Municipal Corporation (MCD) - Road Maintenance Division',
+  'National Highways Authority of India (NHAI)',
+  'MCD Department of Environment Management Services (DEMS - Sanitation)',
+  'Delhi Jal Board (DJB) / Municipal Drainage Division',
+  'Electricity Distribution Utility (BSES / Tata Power / MCD Electrical)',
+  'MCD Civil Engineering - Footpath & Pedestrian Division',
+];
 
 const CURATED_DEMO_SAMPLES = [
   {
@@ -42,8 +66,19 @@ export const ReportScreen: React.FC = () => {
     longitude: 77.2065,
   });
   const [locationLabel, setLocationLabel] = useState<string>('Ward 14 • Connaught Place, New Delhi');
+
+  // AI Pre-Analysis States
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analyzePhase, setAnalyzePhase] = useState<'upload' | 'vision' | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<any | null>(null);
+
+  // User confirmation and edit states
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [customTitle, setCustomTitle] = useState<string>('');
+  const [customDescription, setCustomDescription] = useState<string>('');
+  const [showDepartmentPicker, setShowDepartmentPicker] = useState<boolean>(false);
+
+  // Publishing states
+  const [isPublishing, setIsPublishing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filedInfo, setFiledInfo] = useState<string | null>(null);
@@ -72,11 +107,37 @@ export const ReportScreen: React.FC = () => {
           );
         }
       } catch {
-        // Fallback default coordinates
         setLocationLabel('Demo location: Ward 14 • Connaught Place, New Delhi');
       }
     })();
   }, []);
+
+  // Trigger AI analysis as soon as a photo is selected
+  const analyzePhoto = async (uri: string) => {
+    setIsAnalyzing(true);
+    setErrorMessage(null);
+    setAnalysisResult(null);
+
+    try {
+      const ai = await api.analyzeTicketPhoto(uri);
+      setAnalysisResult(ai);
+      setSelectedDepartment(ai.target_department || STANDARD_DEPARTMENTS[0]);
+      setCustomTitle(ai.suggested_title || 'Reported Civic Defect');
+      setCustomDescription(ai.suggested_description || '');
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('Vision service unavailable') || msg.includes('503')) {
+        setErrorMessage('DeepSeek vision service temporarily busy. You can still confirm details and publish.');
+      } else {
+        setErrorMessage(msg || 'AI analysis failed. You can manually enter details.');
+      }
+      // Fallback defaults
+      setSelectedDepartment(STANDARD_DEPARTMENTS[0]);
+      setCustomTitle('Civic Defect on Ward Corridor');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleLaunchCamera = async () => {
     setErrorMessage(null);
@@ -92,8 +153,10 @@ export const ReportScreen: React.FC = () => {
         aspect: [4, 3],
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPhotoUri(result.assets[0].uri);
+        const uri = result.assets[0].uri;
+        setPhotoUri(uri);
         setPhotoKind('local');
+        await analyzePhoto(uri);
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Unable to open camera');
@@ -103,61 +166,58 @@ export const ReportScreen: React.FC = () => {
   const handleLaunchGallery = async () => {
     setErrorMessage(null);
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Gallery Access', 'Media library permission is required to select photos.');
-        return;
-      }
       const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.8,
         aspect: [4, 3],
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPhotoUri(result.assets[0].uri);
+        const uri = result.assets[0].uri;
+        setPhotoUri(uri);
         setPhotoKind('local');
+        await analyzePhoto(uri);
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Unable to select from library');
     }
   };
 
-  const handleSelectSample = (sampleUrl: string) => {
+  const handleSelectSample = async (sampleUrl: string) => {
     setErrorMessage(null);
     setPhotoUri(sampleUrl);
     setPhotoKind('remote');
+    await analyzePhoto(sampleUrl);
   };
 
-  const handleSubmit = async () => {
+  const handleConfirmAndPublish = async () => {
     if (!photoUri) return;
-    setIsAnalyzing(true);
-    setAnalyzePhase('upload');
+    setIsPublishing(true);
     setErrorMessage(null);
 
-    // Phase MEDIUM: move to vision once bytes are on the wire. appendPhoto
-    // resolves its blob fetch internally, so approximate with a short delay.
-    const phaseTimer = setTimeout(() => setAnalyzePhase('vision'), 1500);
     try {
       const res = await api.reportTicket(
         photoUri,
         coords.latitude,
         coords.longitude,
         'WARD_DELHI_14',
-        currentUser.id
+        currentUser.id,
+        selectedDepartment,
+        customTitle,
+        customDescription
       );
+
       setIsSuccess(true);
-      if (res?.category) {
-        setFiledInfo(
-          `${String(res.category).replace(/_/g, ' ')} · severity ${res.severity ?? '?'}/5 · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
-        );
-      } else {
-        setFiledInfo(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-      }
+      setFiledInfo(
+        `${String(res.category || analysisResult?.category || 'DEFECT').replace(/_/g, ' ')} · ${selectedDepartment.split('-')[0]} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
+      );
       updatePoints(res?.escrow_points ?? 50);
+
       timer.current = setTimeout(() => {
         setIsSuccess(false);
         setPhotoUri(null);
         setPhotoKind(null);
+        setAnalysisResult(null);
         setFiledInfo(null);
       }, 5000);
     } catch (err: any) {
@@ -166,26 +226,22 @@ export const ReportScreen: React.FC = () => {
       if (msg.startsWith('DUPLICATE:')) {
         setErrorMessage('Already mapped nearby. Check the feed for the existing ticket.');
       } else if (msg.includes('NEEDS_CLARIFICATION')) {
-        const detail = msg.split('NEEDS_CLARIFICATION:')[1]?.trim();
-        setErrorMessage(
-          detail
-            ? `AI could not classify this photo (${detail}). Retake with the defect centered and well lit.`
-            : 'AI could not classify — please retake with clearer framing.'
-        );
-      } else if (msg.includes('Vision service unavailable') || msg.includes('503')) {
-        setErrorMessage('AI vision is temporarily unavailable. Your photo was kept — retry in a few seconds.');
-      } else if (msg.includes('Unsupported photo source')) {
-        setErrorMessage('Could not read that photo file. Try camera capture or another gallery image.');
-      } else if (msg.includes('not a valid image')) {
-        setErrorMessage('That file is not a valid image. Pick a JPEG, PNG, or WebP photo.');
+        setErrorMessage('AI could not classify with sufficient confidence — please retake with clearer framing.');
       } else {
         setErrorMessage(msg || 'Failed to publish report. Please try again.');
       }
     } finally {
-      clearTimeout(phaseTimer);
-      setAnalyzePhase(null);
-      setIsAnalyzing(false);
+      setIsPublishing(false);
     }
+  };
+
+  const handleReset = () => {
+    setPhotoUri(null);
+    setPhotoKind(null);
+    setAnalysisResult(null);
+    setErrorMessage(null);
+    setFiledInfo(null);
+    setShowDepartmentPicker(false);
   };
 
   return (
@@ -195,13 +251,13 @@ export const ReportScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Report Road Hazard</Text>
+        <Text style={styles.title}>Report Civic Hazard</Text>
         <Text style={styles.subtitle}>
-          Capture photographic proof of potholes, garbage blackspots, or broken streetlights. Evidence is classified in real-time by DeepSeek 4.1 Vision.
+          DeepSeek 4.1 Vision analyzes the photograph, maps it to the exact responsible government department, and requires your confirmation before publishing.
         </Text>
       </View>
 
-      {/* GPS Location Banner */}
+      {/* GPS Location Bar */}
       <View style={styles.locationBar}>
         <MapPin size={15} color="#0284C7" />
         <Text style={styles.locationText} numberOfLines={1}>
@@ -209,27 +265,25 @@ export const ReportScreen: React.FC = () => {
         </Text>
       </View>
 
-      {/* Photo Picker Viewport */}
+      {/* Photo Capture or Preview */}
       {photoUri ? (
         <View style={styles.previewCard}>
           <Image source={{ uri: photoUri }} style={styles.previewImage} resizeMode="cover" />
           <View style={styles.aiTag}>
             <Sparkles size={13} color="#38BDF8" />
             <Text style={styles.aiTagText}>
-              {photoKind === 'local' ? 'On-device photo • Vision upload ready' : 'Sample photo • Vision upload ready'}
+              {isAnalyzing
+                ? 'DeepSeek Vision analyzing image…'
+                : 'DeepSeek Vision classification complete'}
             </Text>
           </View>
           <TouchableOpacity
             style={styles.retakeBtn}
-            onPress={() => {
-              setPhotoUri(null);
-              setPhotoKind(null);
-              setFiledInfo(null);
-            }}
+            onPress={handleReset}
             activeOpacity={0.8}
           >
             <RotateCcw size={14} color="#0F172A" />
-            <Text style={styles.retakeText}>Retake / Change</Text>
+            <Text style={styles.retakeText}>Retake / Clear</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -242,7 +296,7 @@ export const ReportScreen: React.FC = () => {
             >
               <Camera size={26} color="#FFFFFF" />
               <Text style={styles.primaryBtnText}>Take Live Photo</Text>
-              <Text style={styles.primaryBtnSub}>Opens Device Camera</Text>
+              <Text style={styles.primaryBtnSub}>Live Device Viewfinder</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -283,45 +337,163 @@ export const ReportScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Submit / Status Box */}
-      {isSuccess ? (
+      {/* AI Analyzing Loader */}
+      {isAnalyzing && (
+        <View style={styles.analyzingCard}>
+          <ActivityIndicator color="#0284C7" size="small" />
+          <Text style={styles.analyzingTitle}>DeepSeek 4.1 Vision Analyzing Defect...</Text>
+          <Text style={styles.analyzingSub}>
+            Triaging municipal department, calculating severity, and verifying road jurisdiction.
+          </Text>
+        </View>
+      )}
+
+      {/* Explainable Department Routing & Confirmation Card */}
+      {analysisResult && !isAnalyzing && (
+        <View style={styles.routingReviewCard}>
+          <View style={styles.reviewHeaderRow}>
+            <View style={styles.badgePill}>
+              <Text style={styles.badgeText}>
+                {analysisResult.category} • SEVERITY {analysisResult.severity}/5
+              </Text>
+            </View>
+            {analysisResult.is_submerged_or_wet && (
+              <View style={styles.waterBadge}>
+                <Text style={styles.waterText}>Monsoon Submerged</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Government Department Box */}
+          <View style={styles.departmentBox}>
+            <View style={styles.deptHeaderRow}>
+              <Building2 size={16} color="#0F172A" />
+              <Text style={styles.deptLabel}>Assigned Government Authority</Text>
+            </View>
+            <Text style={styles.deptValue}>{selectedDepartment}</Text>
+
+            {/* AI Reasoning Callout */}
+            <View style={styles.reasoningCallout}>
+              <View style={styles.reasoningTitleRow}>
+                <HelpCircle size={13} color="#0D9488" />
+                <Text style={styles.reasoningTitle}>Why the AI mapped to this department:</Text>
+              </View>
+              <Text style={styles.reasoningBody}>
+                {analysisResult.department_reasoning ||
+                  'Visual cues of road width, asphalt grade, and surrounding utility infrastructure match this authority.'}
+              </Text>
+            </View>
+
+            {/* Department Override Toggle */}
+            <TouchableOpacity
+              style={styles.overrideToggle}
+              onPress={() => setShowDepartmentPicker(!showDepartmentPicker)}
+              activeOpacity={0.7}
+            >
+              <Edit3 size={13} color="#0284C7" />
+              <Text style={styles.overrideToggleText}>
+                {showDepartmentPicker ? 'Close Department Options' : 'Change Department / Wrong Authority?'}
+              </Text>
+              <ChevronDown size={14} color="#0284C7" />
+            </TouchableOpacity>
+
+            {/* Department Options Chips */}
+            {showDepartmentPicker && (
+              <View style={styles.deptList}>
+                {STANDARD_DEPARTMENTS.map((dept, idx) => {
+                  const isSelected = dept === selectedDepartment;
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[styles.deptChip, isSelected && styles.deptChipSelected]}
+                      onPress={() => {
+                        setSelectedDepartment(dept);
+                        setShowDepartmentPicker(false);
+                      }}
+                    >
+                      <Text style={[styles.deptChipText, isSelected && styles.deptChipTextSelected]}>
+                        {dept}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
+          {/* Editable Post Content */}
+          <View style={styles.editableSection}>
+            <Text style={styles.editSectionLabel}>Ticket Title</Text>
+            <TextInput
+              style={styles.textInput}
+              value={customTitle}
+              onChangeText={setCustomTitle}
+              placeholder="Concise defect title"
+              placeholderTextColor="#94A3B8"
+            />
+
+            <Text style={[styles.editSectionLabel, { marginTop: 10 }]}>Description & Field Notes</Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea]}
+              value={customDescription}
+              onChangeText={setCustomDescription}
+              placeholder="Actionable notes for municipal inspection crew"
+              placeholderTextColor="#94A3B8"
+              multiline
+              numberOfLines={3}
+            />
+          </View>
+
+          {/* Anti-Spoof Warning if triggered */}
+          {analysisResult.is_screen_or_spoof && (
+            <View style={styles.spoofWarning}>
+              <ShieldAlert size={16} color="#D97706" />
+              <Text style={styles.spoofText}>
+                Notice: Image may resemble a digital monitor or print. Live on-street photos are required for full audit certification.
+              </Text>
+            </View>
+          )}
+
+          {/* Confirm & Publish Button */}
+          <TouchableOpacity
+            style={[styles.confirmPublishBtn, isPublishing && styles.submitBtnDisabled]}
+            onPress={handleConfirmAndPublish}
+            disabled={isPublishing}
+            activeOpacity={0.85}
+          >
+            {isPublishing ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator color="#FFFFFF" size="small" />
+                <Text style={styles.submitBtnText}>Publishing to Ward 14 Feed…</Text>
+              </View>
+            ) : (
+              <Text style={styles.submitBtnText}>
+                Confirm Authority & Publish (+50 Escrow Pts)
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Success Notification */}
+      {isSuccess && (
         <View style={styles.successBox}>
           <CheckCircle2 size={22} color="#059669" />
           <View style={{ flex: 1 }}>
             <Text style={styles.successTitle}>Report Published to Ward 14 Feed</Text>
             <Text style={styles.successSub}>
-              +50 Escrow Points Awarded. Defect is now publicly visible in the ward feed.
-              {filedInfo ? `\nAI verdict: ${filedInfo}` : ''}
+              +50 Escrow Points Awarded. Routed to {selectedDepartment.split('-')[0]} for SLA tracking.
+              {filedInfo ? `\n${filedInfo}` : ''}
             </Text>
           </View>
         </View>
-      ) : (
-        photoUri && (
-          <TouchableOpacity
-            style={[styles.submitBtn, isAnalyzing && styles.submitBtnDisabled]}
-            onPress={handleSubmit}
-            disabled={isAnalyzing}
-            activeOpacity={0.85}
-          >
-            {isAnalyzing ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator color="#FFFFFF" size="small" />
-                <Text style={styles.submitBtnText}>
-                  {analyzePhase === 'vision' ? 'DeepSeek vision classifying…' : 'Uploading photo…'}
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.submitBtnText}>Publish to Ward 14 Feed (+50 Escrow Pts)</Text>
-            )}
-          </TouchableOpacity>
-        )
       )}
 
       {/* Info Card */}
       <View style={styles.infoCard}>
-        <Text style={styles.infoCardTitle}>Civic Audit Standards</Text>
+        <Text style={styles.infoCardTitle}>Civic Audit & Routing Standard</Text>
         <Text style={styles.infoCardText}>
-          All submitted photographs must clearly show the defect and surrounding road context. Submissions within 50 meters of an existing active defect are automatically deduplicated.
+          DeepSeek 4.1 Vision maps defects across MCD, State PWD, NHAI, DJB, and Discom jurisdictions. Your confirmation prevents inter-departmental blame games and ensures prompt field resolution.
         </Text>
       </View>
     </ScrollView>
@@ -448,69 +620,284 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sampleChip: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   sampleChipText: {
     fontSize: 11,
-    fontWeight: '600',
     color: '#334155',
+    fontWeight: '600',
   },
   previewCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     marginBottom: 16,
     position: 'relative',
   },
   previewImage: {
     width: '100%',
-    height: 240,
+    height: 220,
+    backgroundColor: '#0F172A',
   },
   aiTag: {
     position: 'absolute',
-    top: 12,
-    left: 12,
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(15, 23, 42, 0.88)',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 20,
   },
   aiTagText: {
-    color: '#FFFFFF',
+    color: '#F8FAFC',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   retakeBtn: {
     position: 'absolute',
-    bottom: 12,
-    right: 12,
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
   retakeText: {
-    color: '#0F172A',
     fontSize: 11,
     fontWeight: '700',
+    color: '#0F172A',
+  },
+  analyzingCard: {
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  analyzingTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0369A1',
+    marginTop: 8,
+  },
+  analyzingSub: {
+    fontSize: 11,
+    color: '#0284C7',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  routingReviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  reviewHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  badgePill: {
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  waterBadge: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  waterText: {
+    color: '#1D4ED8',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  departmentBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    marginBottom: 14,
+  },
+  deptHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  deptLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  deptValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  reasoningCallout: {
+    backgroundColor: '#F0FDFA',
+    borderLeftWidth: 3,
+    borderLeftColor: '#0D9488',
+    padding: 10,
+    borderRadius: 6,
+    marginTop: 10,
+  },
+  reasoningTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 3,
+  },
+  reasoningTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0D9488',
+    textTransform: 'uppercase',
+  },
+  reasoningBody: {
+    fontSize: 11,
+    color: '#334155',
+    lineHeight: 16,
+  },
+  overrideToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  overrideToggleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0284C7',
+    flex: 1,
+  },
+  deptList: {
+    marginTop: 10,
+    gap: 6,
+  },
+  deptChip: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  deptChipSelected: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  deptChipText: {
+    fontSize: 11,
+    color: '#334155',
+    fontWeight: '600',
+  },
+  deptChipTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  editableSection: {
+    marginBottom: 14,
+  },
+  editSectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 4,
+  },
+  textInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 12,
+    color: '#0F172A',
+  },
+  textArea: {
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  spoofWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 14,
+  },
+  spoofText: {
+    fontSize: 10.5,
+    color: '#92400E',
+    flex: 1,
+    lineHeight: 15,
+  },
+  confirmPublishBtn: {
+    backgroundColor: '#0D9488',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitBtnDisabled: {
+    opacity: 0.6,
+  },
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   errorBox: {
     flexDirection: 'row',
@@ -520,66 +907,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FECACA',
     padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
+    borderRadius: 12,
+    marginBottom: 16,
   },
   errorText: {
-    color: '#B91C1C',
+    color: '#DC2626',
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
   },
-  submitBtn: {
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
-    marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  submitBtnDisabled: {
-    backgroundColor: '#64748B',
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  submitBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
   successBox: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
+    alignItems: 'center',
+    gap: 12,
     backgroundColor: '#ECFDF5',
     borderWidth: 1,
     borderColor: '#A7F3D0',
-    padding: 14,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 14,
     marginBottom: 16,
   },
   successTitle: {
-    color: '#065F46',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
+    color: '#065F46',
   },
   successSub: {
-    color: '#047857',
     fontSize: 11,
+    color: '#047857',
     marginTop: 2,
-    lineHeight: 15,
+    lineHeight: 16,
   },
   infoCard: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
@@ -587,10 +947,10 @@ const styles = StyleSheet.create({
   },
   infoCardTitle: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#475569',
+    fontWeight: '700',
+    color: '#64748B',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
     marginBottom: 4,
   },
   infoCardText: {

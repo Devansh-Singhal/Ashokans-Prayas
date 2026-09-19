@@ -53,6 +53,30 @@ async def require_active_reporter(db: AsyncSession, reporter_id: str) -> User:
     return user
 
 
+@router.post("/analyze")
+async def analyze_ticket_photo(
+    photo: UploadFile = File(...),
+):
+    """
+    Pre-report explainable AI analysis endpoint.
+    Analyzes the photograph with DeepSeek 4.1 Vision to determine the defect category,
+    exact government department, transparent reasoning, severity rating, and suggested content
+    so the user can review, confirm, or edit before officially publishing to the feed.
+    """
+    content = await photo.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty photo")
+    try:
+        ai = await classify_image(photo.filename or "photo.jpg", content, photo.content_type or "image/jpeg")
+        return {"success": True, "ai": ai}
+    except ValueError as e:
+        if "INVALID_IMAGE" in str(e):
+            raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+        raise
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail="Vision service unavailable, try again later")
+
+
 @router.post("/report")
 async def report_ticket(
     photo: UploadFile = File(...),
@@ -60,6 +84,9 @@ async def report_ticket(
     longitude: float = Form(...),
     ward_id: str = Form(...),
     reporter_id: str = Form(...),
+    target_department: str = Form(None),
+    custom_title: str = Form(None),
+    custom_description: str = Form(None),
     db: AsyncSession = Depends(get_db),
 ):
     reporter = await require_active_reporter(db, reporter_id)
@@ -139,11 +166,17 @@ async def report_ticket(
     return {
         "ticket_id": ticket.id,
         "category": ticket.category,
+        "target_department": target_department or ai.get("target_department"),
+        "department_reasoning": ai.get("department_reasoning"),
         "severity": ticket.severity,
+        "severity_justification": ai.get("severity_justification"),
         "status": ticket.status,
         "escrow_points": REPORT_ESCROW_POINTS,
         "privacy_blur": ai.get("bounding_boxes_to_blur", []),
         "commercial_adjacent": ticket.is_commercial_adjacent,
+        "suggested_title": custom_title or ai.get("suggested_title"),
+        "suggested_description": custom_description or ai.get("suggested_description"),
+        "actionable_remedy": ai.get("actionable_remedy"),
     }
 
 

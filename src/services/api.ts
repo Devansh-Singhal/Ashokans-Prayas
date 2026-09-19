@@ -173,12 +173,30 @@ export class CivicFeedApi {
     };
   }
 
+  async analyzeTicketPhoto(photoUri: string): Promise<any> {
+    const formData = new FormData();
+    await appendPhoto(formData, 'photo', photoUri, 'defect.jpg');
+    const res = await timedFetch(`${this.baseUrl}/tickets/analyze`, {
+      method: 'POST',
+      body: formData,
+    }, 45000);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(typeof err.detail === 'string' ? err.detail : 'Analysis failed');
+    }
+    const data = await res.json();
+    return data.ai;
+  }
+
   async reportTicket(
     photoUri: string,
     latitude: number,
     longitude: number,
     wardId: string,
-    reporterId: string
+    reporterId: string,
+    targetDepartment?: string,
+    customTitle?: string,
+    customDescription?: string
   ): Promise<any> {
     const formData = new FormData();
     await appendPhoto(formData, 'photo', photoUri, 'pothole.jpg');
@@ -186,6 +204,15 @@ export class CivicFeedApi {
     formData.append('longitude', longitude.toString());
     formData.append('ward_id', wardId);
     formData.append('reporter_id', reporterId);
+    if (targetDepartment) {
+      formData.append('target_department', targetDepartment);
+    }
+    if (customTitle) {
+      formData.append('custom_title', customTitle);
+    }
+    if (customDescription) {
+      formData.append('custom_description', customDescription);
+    }
 
     const res = await timedFetch(`${this.baseUrl}/tickets/report`, {
       method: 'POST',

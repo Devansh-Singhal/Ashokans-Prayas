@@ -454,3 +454,21 @@ async def test_reverify_resolved_rejected(client):
         data={"auditor_id": c["user_id"], "latitude": "28.67", "longitude": "77.27"},
     )
     assert second.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_analyze_photo_endpoint(client):
+    res = await client.post(
+        "/api/v1/tickets/analyze",
+        files=photo("pothole_crater.jpg"),
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["success"] is True
+    ai = body["ai"]
+    assert ai["category"] in ["POTHOLE", "GARBAGE_ACCUMULATION", "STREETLIGHT", "OPEN_DRAIN", "FOOTPATH_DAMAGE", "UNKNOWN"]
+    assert "target_department" in ai
+    assert "department_reasoning" in ai
+    assert "severity" in ai
+    assert "suggested_title" in ai
+    assert "suggested_description" in ai
