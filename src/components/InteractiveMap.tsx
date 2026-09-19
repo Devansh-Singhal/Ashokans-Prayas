@@ -1,6 +1,14 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Platform, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Platform, Text, Image } from 'react-native';
 import { Ticket } from '../types';
+
+let NativeOsmMapComponent: React.FC<any> | null = null;
+if (Platform.OS !== 'web') {
+  // require() stays behind this gate: Metro's platform resolver drops it for
+  // web bundles, so react-native-maps is never pulled into the web build.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  NativeOsmMapComponent = require('./NativeOsmMap').NativeOsmMap;
+}
 
 interface MapArea {
   center: { latitude: number; longitude: number };
@@ -294,7 +302,7 @@ export const InteractiveMap: React.FC<Props> = ({
 </html>`;
   };
 
-  if (Platform.OS === 'web') {
+  if (Platform.OS === ('web' as typeof Platform.OS)) {
     return (
       <View style={styles.container}>
         {React.createElement('iframe', {
@@ -312,6 +320,54 @@ export const InteractiveMap: React.FC<Props> = ({
   }
 
   // Project tickets onto the radar by lat/lng (index-grid fallback when span is degenerate)
+  // Native mobile: real OpenStreetMap tiles via react-native-maps UrlTile.
+  // OSM tile usage policy: https://operations.osmfoundation.org/policies/tiles/
+  const mapRegion = {
+    latitude: selectedTicket?.latitude ?? fallbackCenter.latitude,
+    longitude: selectedTicket?.longitude ?? fallbackCenter.longitude,
+    latitudeDelta: fallbackZoom >= 15 ? 0.02 : 0.06,
+    longitudeDelta: fallbackZoom >= 15 ? 0.02 : 0.06,
+  };
+  const pinColorFor = (status: Ticket['status']) =>
+    status === 'RESOLVED' ? '#10B981' : status === 'PROVISIONAL_FIX' ? '#F59E0B' : '#EF4444';
+
+  // Hooks must run unconditionally (same order on web and native).
+  const [tileStatus, setTileStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  useEffect(() => {
+    setTileStatus('loading');
+  }, [area?.pillLabel]);
+  useEffect(() => {
+    if (tileStatus !== 'loading') return;
+    const t = setTimeout(() => setTileStatus((s) => (s === 'loading' ? 'error' : s)), 12000);
+    return () => clearTimeout(t);
+  }, [tileStatus, area?.pillLabel]);
+
+  if (Platform.OS !== ('web' as typeof Platform.OS)) {
+    if (NativeOsmMapComponent == null) {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.radarSub}>Native map unavailable — open on device</Text>
+        </View>
+      );
+    }
+    const NativeOsmMap = NativeOsmMapComponent;
+    return (
+      <NativeOsmMap
+        tickets={tickets}
+        selectedTicket={selectedTicket}
+        onSelectTicket={onSelectTicket}
+        userCoords={userCoords}
+        pillLabel={pillLabel}
+        mapRegion={mapRegion}
+        userPopupPlace={userPopupPlace}
+        tileStatus={tileStatus}
+        onMapReady={() => setTileStatus('ready')}
+      />
+    );
+  }
+
+  // Web-only radar projection helpers below are unreachable on native but kept
+  // for reference; the web path returns earlier via the iframe branch.
   const lats = tickets.map((t) => t.latitude);
   const lngs = tickets.map((t) => t.longitude);
   const minLat = lats.length ? Math.min(...lats) : 0;
@@ -336,6 +392,7 @@ export const InteractiveMap: React.FC<Props> = ({
       left: `${(pad + x * (1 - pad * 2)) * 100}%` as `${number}%`,
     };
   };
+  void projectPin;
 
   // Native mobile fallback (stylized spatial coordinate radar)
   return (
@@ -345,27 +402,18 @@ export const InteractiveMap: React.FC<Props> = ({
         <Text style={styles.radarSub}>{radarSubtitlePlace} (projected pins) ({tickets.length} hazards mapped)</Text>
       </View>
       <View style={styles.nativeGrid}>
-        {tickets.map((t, idx) => {
+        {tickets.map((t) => {
           const isSelected = selectedTicket?.id === t.id;
-          const pinColor =
-            t.status === 'RESOLVED' ? '#10B981' : t.status === 'PROVISIONAL_FIX' ? '#F59E0B' : '#EF4444';
+          const pinColor = pinColorFor(t.status);
           return (
-            <TouchableOpacity
+            <View
               key={t.id}
               style={[
                 styles.nativePin,
-                projectPin(t, idx),
+                isSelected && styles.pinDotSelected,
+                { backgroundColor: pinColor },
               ]}
-              onPress={() => onSelectTicket(t)}
-            >
-              <View
-                style={[
-                  styles.pinDot,
-                  { backgroundColor: pinColor },
-                  isSelected && styles.pinDotSelected,
-                ]}
-              />
-            </TouchableOpacity>
+            />
           );
         })}
       </View>
