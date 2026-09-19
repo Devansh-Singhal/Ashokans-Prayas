@@ -32,16 +32,22 @@ function Icon({ Cmp, color }: { Cmp: typeof Newspaper; color: string }) {
 }
 
 // Bar outline (top radius 5, bottom radius 30) with a real notch cut out at cx.
-function barPath(w: number, cx: number) {
-  const l = cx - NOTCH_HALF;
-  const r = cx + NOTCH_HALF;
+// half adapts so the scoop never runs past the bar edge on narrow phones.
+// The shoulder offsets scale with k = half / NOTCH_HALF, so the scoop keeps
+// its symmetric shape at every width — k is 1 on middle tabs, pixel-identical
+// to the Figma curve. Depth (y) is never scaled, so the circle nests the same.
+function barPath(w: number, cx: number, half: number) {
+  const l = cx - half;
+  const r = cx + half;
+  const k = half / NOTCH_HALF;
+  const x = (v: number) => v * k;
   return [
     'M0 5C0 2.239 2.239 0 5 0',
     `H${l}`,
-    `C${l + 6.84} 0 ${l + 8.715} 6.875 ${l + 10.999} 15.251`,
-    `C${l + 14.559} 28.303 ${l + 19.112} 45 ${cx} 45`,
-    `C${cx + 26.034} 45 ${cx + 30.68} 28.114 ${cx + 34.279} 15.03`,
-    `C${cx + 36.556} 6.754 ${cx + 38.414} 0 ${r} 0`,
+    `C${l + x(6.84)} 0 ${l + x(8.715)} 6.875 ${l + x(10.999)} 15.251`,
+    `C${l + x(14.559)} 28.303 ${l + x(19.112)} 45 ${cx} 45`,
+    `C${cx + x(26.034)} 45 ${cx + x(30.68)} 28.114 ${cx + x(34.279)} 15.03`,
+    `C${cx + x(36.556)} 6.754 ${cx + x(38.414)} 0 ${r} 0`,
     `H${w - 5}C${w - 2.239} 0 ${w} 2.239 ${w} 5`,
     `V50C${w} 66.569 ${w - 13.431} 80 ${w - 30} 80`,
     'H30C13.431 80 0 66.569 0 50Z',
@@ -57,15 +63,19 @@ export default function BottomTabBar({ active, onChange }: Props) {
   const [width, setWidth] = useState(0);
   const slot = (width - PAD * 2) / TABS.length;
   const activeIndex = TABS.findIndex((t) => t.key === active);
-  const rawNotchX = PAD + slot * (activeIndex + 0.5);
-  // Clamp so the notch never runs past the bar's rounded corners on the end tabs.
-  const notchX = Math.min(Math.max(rawNotchX, NOTCH_HALF + 10), width - NOTCH_HALF - 10);
+  // True slot center — never shifted. The orange circle always sits here,
+  // exactly like the camera tab's. Only the scoop's shoulders adapt.
+  const notchX = PAD + slot * (activeIndex + 0.5);
+  const half = Math.min(
+    NOTCH_HALF,
+    Math.max(0, Math.min(notchX - 10, width - notchX - 10))
+  );
 
   return (
     <View style={styles.root} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       {width > 0 && (
         <Svg width={width} height={BAR_H} style={styles.bar}>
-          <Path d={barPath(width, notchX)} fill={BAR_COLOR} />
+          <Path d={barPath(width, notchX, half)} fill={BAR_COLOR} />
         </Svg>
       )}
       {TABS.map(({ key, label, icon }) => {
