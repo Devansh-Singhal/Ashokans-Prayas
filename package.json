@@ -38,7 +38,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "tunnel": "node ./scripts/dev-tunnel.js"
+    "tunnel": "node ./scripts/dev-tunnel.js",
+    "tunnel:named": "node ./scripts/dev-tunnel.js --hostname dev.deserver.in"
   },
   "private": true
 }

@@ -6,7 +6,11 @@
  * Cloudflare's tunnel endpoints are not intercepted, so we run our own and
  * override the URL Metro advertises in its manifest via EXPO_PACKAGER_PROXY_URL.
  *
- * Any extra args are forwarded to `expo start` (e.g. `npm run tunnel -- --clear`).
+ * Two modes:
+ *   npm run tunnel        -- quick tunnel, random *.trycloudflare.com URL, no account
+ *   npm run tunnel:named  -- named tunnel, stable hostname (needs cloudflared login)
+ *
+ * Any other args are forwarded to `expo start` (e.g. `npm run tunnel -- --clear`).
  */
 const { spawn } = require('node:child_process');
 const path = require('node:path');
@@ -14,7 +18,14 @@ const path = require('node:path');
 const PORT = process.env.EXPO_PORT || '8081';
 const CLOUDFLARED = process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared';
 const EXPO_CLI = path.join(__dirname, '..', 'node_modules', 'expo', 'bin', 'cli');
-const URL_RE = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/i;
+const QUICK_URL_RE = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/i;
+const CONNECTED_RE = /Registered tunnel connection/i;
+
+// Pull --hostname <value> out of argv; everything left over goes to expo.
+const argv = process.argv.slice(2);
+const hostFlag = argv.indexOf('--hostname');
+const hostname = hostFlag === -1 ? null : argv[hostFlag + 1];
+const expoArgs = hostFlag === -1 ? argv : argv.filter((_, i) => i !== hostFlag && i !== hostFlag + 1);
 
 let cloudflared;
 let expo;
@@ -42,38 +53,43 @@ process.on('SIGTERM', () => shutdown(0));
 
 function startTunnel() {
   return new Promise((resolve, reject) => {
-    console.log(`Opening Cloudflare tunnel to localhost:${PORT} ...`);
+    const args = hostname
+      ? ['tunnel', 'run']
+      : ['tunnel', '--url', `http://localhost:${PORT}`, '--no-autoupdate'];
 
-    cloudflared = spawn(
-      CLOUDFLARED,
-      ['tunnel', '--url', `http://localhost:${PORT}`, '--no-autoupdate'],
-      { stdio: ['ignore', 'pipe', 'pipe'] }
+    console.log(
+      hostname
+        ? `Starting named Cloudflare tunnel for ${hostname} ...`
+        : `Opening Cloudflare quick tunnel to localhost:${PORT} ...`
     );
+
+    cloudflared = spawn(CLOUDFLARED, args, { stdio: ['ignore', 'pipe', 'pipe'] });
 
     cloudflared.on('error', (err) => {
       reject(
         err.code === 'ENOENT'
           ? new Error(
               'cloudflared not found on PATH.\n' +
-                'Install it from https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/'
+                'Install from https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/'
             )
           : err
       );
     });
 
     const timer = setTimeout(
-      () => reject(new Error('Tunnel did not produce a URL within 60s.')),
+      () => reject(new Error('Tunnel did not come up within 60s.')),
       60000
     );
 
     let settled = false;
+    const ready = hostname ? CONNECTED_RE : QUICK_URL_RE;
     const scan = (buf) => {
-      const match = buf.toString().match(URL_RE);
-      if (match && !settled) {
-        settled = true;
-        clearTimeout(timer);
-        resolve(match[0]);
-      }
+      const text = buf.toString();
+      const match = text.match(ready);
+      if (!match || settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(hostname ? `https://${hostname}` : match[0]);
     };
 
     cloudflared.stdout.on('data', scan);
@@ -93,7 +109,7 @@ function startExpo(url) {
 
   expo = spawn(
     process.execPath,
-    [EXPO_CLI, 'start', '--host', 'localhost', '--port', PORT, ...process.argv.slice(2)],
+    [EXPO_CLI, 'start', '--host', 'localhost', '--port', PORT, ...expoArgs],
     { stdio: 'inherit', env: { ...process.env, EXPO_PACKAGER_PROXY_URL: url } }
   );
 
