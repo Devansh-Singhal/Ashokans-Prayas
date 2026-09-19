@@ -85,7 +85,7 @@ export const CivicPostCard: React.FC<Props> = ({
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `[CivicFeed Alert] ${ticket.category} (Severity ${ticket.severity}/5) at ${ticket.ward_id || 'Ward 14 Delhi'}. Status: ${ticket.status}. Verify and track: ashokansprayas://ticket/${ticket.id}`,
+        message: `[CivicFeed Alert] ${ticket.category} (Severity ${ticket.severity}/5) at ${ticket.ward_id || 'Ward 14 Ludhiana'}. Status: ${ticket.status}. Verify and track: ashokansprayas://ticket/${ticket.id}`,
       });
     } catch {
       // dismissed
@@ -128,7 +128,7 @@ export const CivicPostCard: React.FC<Props> = ({
       <View style={styles.locationRow}>
         <MapPin size={13} color="#64748B" />
         <Text style={styles.locationText} numberOfLines={1}>
-          {ticket.latitude.toFixed(4)}, {ticket.longitude.toFixed(4)} • Near Central Delhi Corridor
+          {ticket.latitude.toFixed(4)}, {ticket.longitude.toFixed(4)} • Near Dugri Road, Ludhiana
         </Text>
       </View>
 

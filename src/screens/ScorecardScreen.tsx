@@ -27,7 +27,7 @@ export const ScorecardScreen: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getWardScorecard('WARD_DELHI_14');
+      const data = await api.getWardScorecard('WARD_LUDHIANA_14');
       setScorecard(data);
     } catch (err: any) {
       setError(err?.message || 'Failed to load scorecard');
@@ -35,7 +35,7 @@ export const ScorecardScreen: React.FC = () => {
       setLoading(false);
     }
     try {
-      const feed = await api.getWardFeed('WARD_DELHI_14', 1, 100);
+      const feed = await api.getWardFeed('WARD_LUDHIANA_14', 1, 100);
       setFeedTickets(feed.tickets);
     } catch {
       setFeedTickets(null);
@@ -101,7 +101,7 @@ export const ScorecardScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.header}>Ward 14 Accountability Scorecard</Text>
-      <Text style={styles.subHeader}>Central Delhi Municipal Corporation (MCD) Oversight</Text>
+      <Text style={styles.subHeader}>Municipal Corporation Ludhiana (MCL) Oversight • Punjab</Text>
 
       {/* 1. Main Cleanliness Score Hero with Letter Grade */}
       <View style={styles.scoreHero}>
@@ -161,10 +161,10 @@ export const ScorecardScreen: React.FC = () => {
         <View style={styles.slaHeader}>
           <View style={styles.slaTitleGroup}>
             <Clock size={18} color="#0284C7" />
-            <Text style={styles.slaTitle}>Delhi MCD 48-Hour SLA Benchmark</Text>
+            <Text style={styles.slaTitle}>Ludhiana MCL 48-Hour SLA Benchmark</Text>
           </View>
           <View style={styles.slaTargetBadge}>
-            <Text style={styles.slaTargetText}>MCD Target: 48h (2.0d)</Text>
+            <Text style={styles.slaTargetText}>MCL Target: 48h (2.0d)</Text>
           </View>
         </View>
 

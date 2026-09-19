@@ -34,11 +34,15 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
 
   if (!certificate) return null;
 
+  const serialId = certificate.certificate_id?.replace('PRAYAS-DEL-', 'PRAYAS-PB-LDH-') || certificate.certificate_id;
+  const verifiedTasksCount = certificate.summary.total_verified_tasks || certificate.summary.total_tasks_completed;
+  const citizensCount = certificate.summary.citizens_safeguarded || verifiedTasksCount * 850;
+
   const handleShare = async () => {
     try {
       await Share.share({
         title: `CivicFeed Official Certificate - ${certificate.recipient.name}`,
-        message: `🎓 Delighted to share my official Certificate of Civic Impact from the Municipal Corporation & PRAYAS Civic Network! I have completed ${certificate.summary.total_tasks_completed} civic remediation tasks contributing ${certificate.summary.verified_civic_hours} verified social service hours. Verify here: ${certificate.verification_url}`,
+        message: `🎓 Delighted to share my official Certificate of Civic Impact from Municipal Corporation Ludhiana (MCL) & Government of Punjab! I have completed ${verifiedTasksCount} verified civic remediation tasks safeguarding ${citizensCount.toLocaleString()}+ citizens. Verify here: ${certificate.verification_url}`,
       });
     } catch (err) {
       console.log('Share error', err);
@@ -71,9 +75,9 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
               {/* Gold Top Crest */}
               <View style={styles.crestHeader}>
                 <Building2 size={28} color="#92400E" />
-                <Text style={styles.govTitle}>GOVERNMENT OF NCT OF DELHI</Text>
+                <Text style={styles.govTitle}>GOVERNMENT OF PUNJAB</Text>
                 <Text style={styles.deptSubtitle}>
-                  MUNICIPAL CORPORATION & PRAYAS CIVIC NETWORK
+                  MUNICIPAL CORPORATION LUDHIANA (MCL) • PUNJAB CIVIC AUDIT AUTHORITY
                 </Text>
                 <View style={styles.goldDivider} />
               </View>
@@ -95,24 +99,24 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
 
               <Text style={styles.certBody}>
                 has demonstrated exceptional civic responsibility and completed{' '}
-                <Text style={styles.highlightText}>{certificate.summary.total_tasks_completed} verified civic infrastructure tasks</Text>{' '}
-                under the municipal crowd-audit mandate, amounting to{' '}
-                <Text style={styles.highlightText}>{certificate.summary.verified_civic_hours} hours</Text> of accredited community social service.
+                <Text style={styles.highlightText}>{verifiedTasksCount} verified civic infrastructure tasks</Text>{' '}
+                under the municipal crowd-audit mandate, directly safeguarding over{' '}
+                <Text style={styles.highlightText}>{citizensCount.toLocaleString()} citizens</Text> across Municipal Corporation Ludhiana.
               </Text>
 
               {/* Key Impact Stats Metric */}
               <View style={styles.metricsGrid}>
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricVal}>{certificate.summary.verified_civic_hours}</Text>
-                  <Text style={styles.metricLbl}>NSS / Service Hours</Text>
+                  <Text style={styles.metricVal}>{verifiedTasksCount}</Text>
+                  <Text style={styles.metricLbl}>Verified Tasks</Text>
                 </View>
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricVal}>{certificate.summary.total_tasks_completed}</Text>
-                  <Text style={styles.metricLbl}>Unique Tasks Done</Text>
+                  <Text style={styles.metricVal}>{citizensCount.toLocaleString()}+</Text>
+                  <Text style={styles.metricLbl}>Citizens Safeguarded</Text>
                 </View>
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricVal}>{certificate.summary.citizens_safeguarded.toLocaleString()}+</Text>
-                  <Text style={styles.metricLbl}>Citizens Impacted</Text>
+                  <Text style={styles.metricVal}>{certificate.summary.points_earned ? `${certificate.summary.points_earned} pts` : 'Grade A'}</Text>
+                  <Text style={styles.metricLbl}>Impact Score</Text>
                 </View>
               </View>
 
@@ -128,7 +132,7 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
                     </View>
                     <View style={styles.taskCountPill}>
                       <Text style={styles.taskCountText}>{dom.task_count} tasks</Text>
-                      <Text style={styles.hoursPillText}>{dom.earned_hours}h</Text>
+                      <Text style={styles.statusPillText}>Verified</Text>
                     </View>
                   </View>
                 ))}
@@ -140,18 +144,18 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
                   <View style={styles.qrPlaceholder}>
                     <QrCode size={48} color="#0F172A" />
                   </View>
-                  <Text style={styles.certIdText}>{certificate.certificate_id}</Text>
+                  <Text style={styles.certIdText}>{serialId}</Text>
                   <Text style={styles.hashText}>Hash: {certificate.verification_hash}</Text>
                 </View>
 
                 <View style={styles.signSide}>
                   <View style={styles.sealBadge}>
                     <ShieldCheck size={20} color="#15803D" />
-                    <Text style={styles.sealText}>MUNICIPAL SEAL</Text>
+                    <Text style={styles.sealText}>MCL PUNJAB SEAL</Text>
                   </View>
                   <Text style={styles.signTitle}>Digitally Endorsed by</Text>
-                  <Text style={styles.signPerson}>Dr. R. K. Sharma, IAS</Text>
-                  <Text style={styles.signRole}>Additional Commissioner, MCD</Text>
+                  <Text style={styles.signPerson}>Commissioner, MCL</Text>
+                  <Text style={styles.signRole}>Municipal Corporation Ludhiana & Punjab Civic Audit Authority</Text>
                 </View>
               </View>
 
@@ -279,6 +283,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
     marginTop: 2,
+    textAlign: 'center',
   },
   goldDivider: {
     width: 140,
@@ -338,6 +343,7 @@ const styles = StyleSheet.create({
     color: '#92400E',
     fontWeight: '600',
     marginTop: 4,
+    textAlign: 'center',
   },
   certBody: {
     fontSize: 12,
@@ -428,9 +434,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
   },
-  hoursPillText: {
+  statusPillText: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#16A34A',
   },
   verificationSection: {
@@ -464,6 +470,8 @@ const styles = StyleSheet.create({
   },
   signSide: {
     alignItems: 'flex-end',
+    flex: 1,
+    marginLeft: 12,
   },
   sealBadge: {
     flexDirection: 'row',
@@ -489,10 +497,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: '#0F172A',
+    textAlign: 'right',
   },
   signRole: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#64748B',
+    textAlign: 'right',
   },
   footerNote: {
     textAlign: 'center',

@@ -25,14 +25,14 @@ export const FeedScreen: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [userCoords, setUserCoords] = useState({ latitude: 28.6289, longitude: 77.2065 });
+  const [userCoords, setUserCoords] = useState({ latitude: 30.8893, longitude: 75.8490 });
   const [usingFallback, setUsingFallback] = useState(true);
 
   // Anti-cheat modal state
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const wardId = 'WARD_DELHI_14';
+  const wardId = 'WARD_LUDHIANA_14';
 
   const fetchFeed = async () => {
     try {
@@ -149,7 +149,7 @@ export const FeedScreen: React.FC = () => {
       {isLoading ? (
         <View style={styles.loadingCenter}>
           <ActivityIndicator size="large" color="#0F172A" />
-          <Text style={styles.loadingText}>Loading Ward 14 Social Feed...</Text>
+          <Text style={styles.loadingText}>Loading Ward 14 (Ludhiana) Feed...</Text>
         </View>
       ) : (
         <FlatList
@@ -169,7 +169,7 @@ export const FeedScreen: React.FC = () => {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Sparkles size={40} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>Ward 14 is Spotless!</Text>
+              <Text style={styles.emptyTitle}>Ward 14 (Ludhiana) is Spotless!</Text>
               <Text style={styles.emptySubtitle}>
                 {loadError ? `Could not load feed: ${loadError}` : 'No open issues reported in this category.'}
               </Text>

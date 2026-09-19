@@ -15,7 +15,7 @@ import { api } from '../services/api';
 import { ShowMap } from '../components/showMap';
 import { StatusBadge } from '../components/StatusBadge';
 import { SeverityMeter } from '../components/SeverityMeter';
-import { calculateHaversineDistance, getCurrentGPS, DELHI_WARD_14, LUDHIANA_CASE_STUDY } from '../services/location';
+import { calculateHaversineDistance, getCurrentGPS, WARD_14_LUDHIANA } from '../services/location';
 import {
   PotholeDefectIcon,
   WasteAccumulationIcon,
@@ -23,55 +23,40 @@ import {
   OpenDrainHazardIcon,
 } from '../components/CivicIcons';
 
-type Ward = 'feed' | 'case';
 type FilterType = 'ALL' | 'REPORTED' | 'PROVISIONAL_FIX' | 'RESOLVED' | 'WEATHER_OCCLUDED';
 
-const WARD_AREAS = {
-  feed: {
-    wardId: DELHI_WARD_14.wardId,
-    fallbackLabel: 'Demo location — enable GPS for live audit',
-    emptyPlace: DELHI_WARD_14.shortLabel,
-    area: {
-      center: { ...DELHI_WARD_14.center },
-      zoom: DELHI_WARD_14.zoom,
-      pillLabel: DELHI_WARD_14.mapLabel,
-      radarTitle: DELHI_WARD_14.areaTitle,
-      radarSubtitle: DELHI_WARD_14.areaSubtitle,
-      userPopupPlace: DELHI_WARD_14.userLabel,
-      iframeTitle: 'CivicFeed Ward 14 Map',
-    },
-  },
-  case: {
-    wardId: LUDHIANA_CASE_STUDY.wardId,
-    fallbackLabel: 'Case-study corridor — enable GPS for live audit',
-    emptyPlace: LUDHIANA_CASE_STUDY.shortLabel,
-    area: {
-      center: { ...LUDHIANA_CASE_STUDY.center },
-      zoom: LUDHIANA_CASE_STUDY.zoom,
-      pillLabel: LUDHIANA_CASE_STUDY.mapLabel,
-      radarTitle: LUDHIANA_CASE_STUDY.areaTitle,
-      radarSubtitle: LUDHIANA_CASE_STUDY.areaSubtitle,
-      userPopupPlace: LUDHIANA_CASE_STUDY.userLabel,
-      iframeTitle: 'CivicFeed Ludhiana Case Study Map',
-    },
+const WARD_AREA = {
+  wardId: WARD_14_LUDHIANA.wardId,
+  fallbackLabel: 'Demo location — enable GPS for live audit',
+  emptyPlace: WARD_14_LUDHIANA.shortLabel,
+  area: {
+    center: { ...WARD_14_LUDHIANA.center },
+    zoom: WARD_14_LUDHIANA.zoom,
+    pillLabel: WARD_14_LUDHIANA.mapLabel,
+    radarTitle: WARD_14_LUDHIANA.areaTitle,
+    radarSubtitle: WARD_14_LUDHIANA.areaSubtitle,
+    userPopupPlace: WARD_14_LUDHIANA.userLabel,
+    iframeTitle: 'CivicFeed Ward 14 Map',
   },
 } as const;
 
 export const MapScreen: React.FC = () => {
   const { width } = useWindowDimensions();
-  const [activeWard, setActiveWard] = useState<Ward>('case');
-  const ward = WARD_AREAS[activeWard];
+  const ward = WARD_AREA;
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
-  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number }>({ latitude: DELHI_WARD_14.center.latitude, longitude: DELHI_WARD_14.center.longitude });
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number }>({
+    latitude: WARD_14_LUDHIANA.center.latitude,
+    longitude: WARD_14_LUDHIANA.center.longitude,
+  });
   const [usingFallback, setUsingFallback] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedTicket(null);
     loadTickets();
-  }, [activeWard]);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -143,64 +128,6 @@ export const MapScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Ward switcher: live feed vs Ludhiana case study (additive, above filters) */}
-      <View style={styles.wardContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-        >
-          <TouchableOpacity
-            style={[styles.filterChip, activeWard === 'case' && styles.filterChipActive]}
-            onPress={() => setActiveWard('case')}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                activeWard === 'case' && styles.filterChipTextActive,
-              ]}
-            >
-              Ludhiana Case Study
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterChip, activeWard === 'feed' && styles.filterChipActive]}
-            onPress={() => setActiveWard('feed')}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                activeWard === 'feed' && styles.filterChipTextActive,
-              ]}
-            >
-              Ward 14 Live
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
-      {/* Case-study explainer (renders only on the case tab) */}
-      {activeWard === 'case' && (
-        <View style={styles.caseCard}>
-          <Text style={styles.caseTitle}>Ludhiana — Dugri &amp; Gill Road: the failure CivicFeed fixes</Text>
-          <Text style={styles.caseBody}>
-            Major roads left broken and excavated for 6+ months after water-pipeline work. When a
-            pothole opens or a road caves in, the Municipal Corporation blames the Water Board, the
-            Water Board blames the contractor, and the contractor claims monsoon delays — while the
-            ticket sits marked work completed on a private portal and the fund is disbursed.
-          </Text>
-          <Text style={styles.caseBody}>
-            Contracts require restoring roads to original condition, but nothing public verifies it.
-            CivicFeed publishes every excavated road on an open hyperlocal feed and locks resolution
-            to a 50-meter on-ground citizen check — dug-up roads can&apos;t be abandoned without
-            cross-departmental exposure.
-          </Text>
-        </View>
-      )}
-
       {/* 1. Header Filter Bar (Scrollable for mobile ergonomics) */}
       <View style={styles.filterContainer}>
         <ScrollView
@@ -386,31 +313,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#334155',
     zIndex: 10,
-  },
-  wardContainer: {
-    backgroundColor: '#1E293B',
-    paddingTop: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-    zIndex: 11,
-  },
-  caseCard: {
-    backgroundColor: '#0F172A',
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  caseTitle: {
-    color: '#F8FAFC',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  caseBody: {
-    color: '#94A3B8',
-    fontSize: 11,
-    lineHeight: 16,
   },
   filterScroll: {
     paddingHorizontal: 16,

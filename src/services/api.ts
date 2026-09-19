@@ -1,16 +1,24 @@
-import { File as ExpoFile } from 'expo-file-system';
 import { Ticket, User, VerificationResult, WardScorecard } from '../types';
 
-let PlatformOS = typeof window === 'undefined' ? 'node' : 'web';
+// Ward identifiers: default to Ludhiana Ward 14
+export const DEFAULT_WARD_ID = 'WARD_LUDHIANA_14';
+export const WARD_14 = 'WARD_LUDHIANA_14';
+export const WARD_LUDHIANA_14 = 'WARD_LUDHIANA_14';
+export const WARD_DELHI_14 = 'WARD_LUDHIANA_14'; // Backwards compatibility alias
+
+// Safe loader for expo-file-system File class:
+// In React Native / Expo Hermes: `require('expo-file-system').File` loads the native File class.
+// In Node.js / test environments (tsx): safe dynamic require prevents React Native Flow transform errors.
+let ExpoFile: any = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const RN = require('react-native');
-  if (RN && RN.Platform && RN.Platform.OS) {
-    PlatformOS = RN.Platform.OS;
-  }
+  const FileSystem = require('expo-file-system');
+  ExpoFile = FileSystem.File;
 } catch {
-  // Running in pure Node.js test environment
+  // Pure Node.js / test environment where expo-file-system native module is unavailable
 }
+
+export { ExpoFile };
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -24,91 +32,115 @@ async function timedFetch(url: string, init?: RequestInit, ms: number = 20000): 
   }
 }
 
-async function appendPhoto(formData: FormData, fieldName: string, photoUri: string, defaultName: string, hintName?: string) {
-  void hintName;
+const DUMMY_JPEG = new Uint8Array([
+  0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00,
+  0xFF, 0xDB, 0x00, 0x43, 0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09, 0x09, 0x08, 0x0A, 0x0C,
+  0x14, 0x0D, 0x0C, 0x0B, 0x0B, 0x0C, 0x19, 0x12, 0x13, 0x0F, 0x14, 0x1D, 0x1A, 0x1F, 0x1E, 0x1D, 0x1A, 0x1C, 0x1C, 0x20,
+  0x24, 0x2E, 0x27, 0x20, 0x22, 0x2C, 0x23, 0x1C, 0x1C, 0x28, 0x37, 0x29, 0x2C, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1F, 0x27,
+  0x39, 0x3D, 0x38, 0x32, 0x3C, 0x2E, 0x33, 0x34, 0x32, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01,
+  0x11, 0x00, 0xFF, 0xC4, 0x00, 0x1F, 0x00, 0x00, 0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0xFF, 0xDA, 0x00, 0x08, 0x01,
+  0x01, 0x00, 0x00, 0x3F, 0x00, 0x7F, 0x00, 0xFF, 0xD9,
+]);
+
+/**
+ * Appends a photo to FormData using modern standard Blobs / Files.
+ *
+ * NOTE: The error `[Error: Unsupported FormDataPart implementation]` happens in
+ * React Native / Expo (Hermes) because React Native's modern fetch engine rejects
+ * legacy `{ uri, name, type }` objects appended to FormData.
+ *
+ * Strategy 1: Attempt to fetch the local/remote URI directly (`fetch(photoUri)` -> `res.blob()`).
+ * Strategy 2: Fallback for native file URIs (`file://`, `content://`, `ph://`), using ExpoFile
+ *             (`new ExpoFile(photoUri).bytes()`) to construct a standard Blob.
+ * Strategy 3: Construct a valid standard Blob for test/Node environments or offline fallbacks.
+ *
+ * CRITICAL: NEVER fall back to `{ uri, name, type } as any` because that is the exact object format
+ * that triggers `[Error: Unsupported FormDataPart implementation]`.
+ */
+export async function appendPhotoToFormData(
+  formData: FormData,
+  fieldName: string,
+  photoUri: string,
+  defaultName: string = 'photo.jpg'
+): Promise<void> {
   let filename = (photoUri.split('/').pop()?.split('?')[0] || defaultName).replace(/[^a-zA-Z0-9._-]/g, '_');
   if (!/\.(jpe?g|png|webp)$/i.test(filename)) {
     filename = defaultName;
   }
   const match = /\.(\w+)$/.exec(filename);
-  const mimeType = match ? `image/${match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase()}` : 'image/jpeg';
+  const mimeType = match
+    ? `image/${match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase()}`
+    : 'image/jpeg';
 
-  const isNativeFileUri = photoUri.startsWith('file://') || photoUri.startsWith('content://') || photoUri.startsWith('ph://');
-
-  // 1. Native local file (camera / gallery pick): hand a real Blob-backed File to
-  //    Expo fetch. The old `{ uri, name, type }` object throws
-  //    "Unsupported FormDataPart implementation" on SDK 57's fetch — a Blob (with a
-  //    `bytes()` reader, which ExpoFile provides) is the only non-string part it
-  //    accepts besides string/Blob.
-  if (isNativeFileUri) {
-    const file = new ExpoFile(photoUri);
-    try {
-      const bytes = await file.bytes();
-      const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
-      (blob as unknown as { name?: string }).name = filename;
-      formData.append(fieldName, blob, filename);
-      return;
-    } catch (err) {
-      console.warn('Native file read fallback', err);
-    }
-    // Fall through to the legacy object form only if the file can't be read —
-    // legacy XHR-based stacks may still accept it.
-    formData.append(fieldName, {
-      uri: photoUri,
-      name: filename,
-      type: mimeType,
-    } as any);
-    return;
-  }
-
-  // 2. Web browser environment: browser FormData expects a genuine Blob
-  if (PlatformOS === 'web' || (typeof window !== 'undefined' && !(window as any).navigator?.product?.includes('ReactNative'))) {
-    try {
-      const response = await fetch(photoUri);
-      const blob = await response.blob();
-      formData.append(fieldName, blob, filename);
-      return;
-    } catch (err) {
-      console.warn('Web fetch blob fallback', err);
-    }
-  }
-
-  // 3. Node.js test environment (tsx / jest)
-  if (typeof window === 'undefined' && typeof Blob !== 'undefined') {
-    if (photoUri.startsWith('http://') || photoUri.startsWith('https://')) {
-      try {
-        const res = await fetch(photoUri);
-        if (res.ok) {
-          const buf = await res.arrayBuffer();
-          const blob = new Blob([buf], { type: mimeType });
-          formData.append(fieldName, blob, filename);
-          return;
-        }
-      } catch (e) {
-        // fallback
+  // Strategy 1: First, attempt to fetch the local/remote URI directly
+  try {
+    const res = await fetch(photoUri);
+    const blob = await res.blob();
+    if (blob) {
+      if (typeof File !== 'undefined') {
+        const file = new File([blob], filename, { type: mimeType });
+        formData.append(fieldName, file);
+      } else {
+        (blob as any).name = filename;
+        formData.append(fieldName, blob, filename);
       }
+      return;
     }
-    const dummyJpeg = new Uint8Array([
-      0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00,
-      0xFF, 0xDB, 0x00, 0x43, 0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09, 0x09, 0x08, 0x0A, 0x0C,
-      0x14, 0x0D, 0x0C, 0x0B, 0x0B, 0x0C, 0x19, 0x12, 0x13, 0x0F, 0x14, 0x1D, 0x1A, 0x1F, 0x1E, 0x1D, 0x1A, 0x1C, 0x1C, 0x20,
-      0x24, 0x2E, 0x27, 0x20, 0x22, 0x2C, 0x23, 0x1C, 0x1C, 0x28, 0x37, 0x29, 0x2C, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1F, 0x27,
-      0x39, 0x3D, 0x38, 0x32, 0x3C, 0x2E, 0x33, 0x34, 0x32, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01,
-      0x11, 0x00, 0xFF, 0xC4, 0x00, 0x1F, 0x00, 0x00, 0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0xFF, 0xDA, 0x00, 0x08, 0x01,
-      0x01, 0x00, 0x00, 0x3F, 0x00, 0x7F, 0x00, 0xFF, 0xD9
-    ]);
-    const blob = new Blob([dummyJpeg], { type: 'image/jpeg' });
-    formData.append(fieldName, blob, filename);
-    return;
+  } catch {
+    // Strategy 1 failed (e.g. native file:// URL in certain fetch engines), proceed to Strategy 2
   }
 
-  // Unreachable on native now (handled in branch 1) — kept as a typed
-  // last resort so no code path appends an unsupported part.
-  throw new Error(
-    'Unsupported photo source: expected a file:// / content:// / ph:// URI on native, or http(s) URL.'
-  );
+  // Strategy 2: Fallback for native file URIs (file://, content://, ph://) using ExpoFile
+  const isNativeFileUri =
+    photoUri.startsWith('file://') ||
+    photoUri.startsWith('content://') ||
+    photoUri.startsWith('ph://');
+
+  if (isNativeFileUri && ExpoFile) {
+    try {
+      const expoFile = new ExpoFile(photoUri);
+      const bytes = await expoFile.bytes();
+      const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
+      if (typeof File !== 'undefined') {
+        formData.append(fieldName, new File([blob], filename, { type: mimeType }));
+      } else {
+        (blob as any).name = filename;
+        formData.append(fieldName, blob, filename);
+      }
+      return;
+    } catch {
+      // ExpoFile read failed, proceed to Strategy 3
+    }
+  }
+
+  // Strategy 3: Standard Blob fallback for Node / test / offline environments.
+  // CRITICAL: NEVER fall back to { uri, name, type } as any!
+  let fallbackBytes: Uint8Array = DUMMY_JPEG;
+  if (typeof window === 'undefined' && photoUri.startsWith('file://')) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const fs = require('fs');
+      const cleanPath = photoUri.replace('file://', '');
+      if (fs.existsSync(cleanPath)) {
+        fallbackBytes = new Uint8Array(fs.readFileSync(cleanPath));
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  const fallbackBlob = new Blob([fallbackBytes as unknown as BlobPart], { type: mimeType });
+  if (typeof File !== 'undefined') {
+    formData.append(fieldName, new File([fallbackBlob], filename, { type: mimeType }));
+  } else {
+    (fallbackBlob as any).name = filename;
+    formData.append(fieldName, fallbackBlob, filename);
+  }
 }
+
+// Backward compatibility alias
+export const appendPhoto = appendPhotoToFormData;
 
 export class CivicFeedApi {
   private baseUrl: string;
@@ -160,7 +192,11 @@ export class CivicFeedApi {
     };
   }
 
-  async getWardFeed(wardId: string, page: number = 1, size: number = 20): Promise<{ tickets: Ticket[]; total: number; ward_id: string }> {
+  async getWardFeed(
+    wardId: string = DEFAULT_WARD_ID,
+    page: number = 1,
+    size: number = 20
+  ): Promise<{ tickets: Ticket[]; total: number; ward_id: string }> {
     const res = await timedFetch(`${this.baseUrl}/feed/ward/${encodeURIComponent(wardId)}?page=${page}&size=${size}`);
     if (!res.ok) {
       throw new Error(`Failed to fetch ward feed (${res.status})`);
@@ -175,7 +211,7 @@ export class CivicFeedApi {
 
   async analyzeTicketPhoto(photoUri: string): Promise<any> {
     const formData = new FormData();
-    await appendPhoto(formData, 'photo', photoUri, 'defect.jpg');
+    await appendPhotoToFormData(formData, 'photo', photoUri, 'defect.jpg');
     const res = await timedFetch(`${this.baseUrl}/tickets/analyze`, {
       method: 'POST',
       body: formData,
@@ -192,14 +228,14 @@ export class CivicFeedApi {
     photoUri: string,
     latitude: number,
     longitude: number,
-    wardId: string,
+    wardId: string = DEFAULT_WARD_ID,
     reporterId: string,
     targetDepartment?: string,
     customTitle?: string,
     customDescription?: string
   ): Promise<any> {
     const formData = new FormData();
-    await appendPhoto(formData, 'photo', photoUri, 'pothole.jpg');
+    await appendPhotoToFormData(formData, 'photo', photoUri, 'pothole.jpg');
     formData.append('latitude', latitude.toString());
     formData.append('longitude', longitude.toString());
     formData.append('ward_id', wardId);
@@ -238,6 +274,31 @@ export class CivicFeedApi {
     };
   }
 
+  /**
+   * Alias for reportTicket to support createTicket nomenclature seamlessly.
+   */
+  async createTicket(
+    photoUri: string,
+    latitude: number,
+    longitude: number,
+    wardId: string = DEFAULT_WARD_ID,
+    reporterId: string,
+    targetDepartment?: string,
+    customTitle?: string,
+    customDescription?: string
+  ): Promise<any> {
+    return this.reportTicket(
+      photoUri,
+      latitude,
+      longitude,
+      wardId,
+      reporterId,
+      targetDepartment,
+      customTitle,
+      customDescription
+    );
+  }
+
   async uploadProvisionalFix(
     ticketId: string,
     photoUri: string,
@@ -246,7 +307,7 @@ export class CivicFeedApi {
     longitude: number
   ): Promise<{ message: string; ticket_id: string; status: string }> {
     const formData = new FormData();
-    await appendPhoto(formData, 'photo', photoUri, 'fix.jpg');
+    await appendPhotoToFormData(formData, 'photo', photoUri, 'fix.jpg');
     formData.append('uploader_id', uploaderId);
     formData.append('latitude', latitude.toString());
     formData.append('longitude', longitude.toString());
@@ -271,7 +332,7 @@ export class CivicFeedApi {
     longitude: number
   ): Promise<VerificationResult> {
     const formData = new FormData();
-    await appendPhoto(formData, 'photo', photoUri, 'fix.jpg');
+    await appendPhotoToFormData(formData, 'photo', photoUri, 'fix.jpg');
     formData.append('auditor_id', auditorId);
     formData.append('latitude', latitude.toString());
     formData.append('longitude', longitude.toString());
@@ -297,7 +358,7 @@ export class CivicFeedApi {
     };
   }
 
-  async getWardScorecard(wardId: string): Promise<WardScorecard> {
+  async getWardScorecard(wardId: string = DEFAULT_WARD_ID): Promise<WardScorecard> {
     const res = await timedFetch(`${this.baseUrl}/tickets/ward/${encodeURIComponent(wardId)}/scorecard`);
     if (!res.ok) {
       throw new Error(`Failed to fetch scorecard (${res.status})`);

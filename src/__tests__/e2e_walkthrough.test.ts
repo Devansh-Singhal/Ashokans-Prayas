@@ -14,7 +14,7 @@ async function runStageDemoWalkthrough() {
   console.log("  CIVICFEED: 90-SECOND HACKATHON STAGE DEMO WALKTHROUGH TEST  ");
   console.log("================================================================\n");
 
-  const wardId = "WARD_DELHI_14";
+  const wardId = "WARD_LUDHIANA_14";
   const sampleReportPhoto = "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=800&q=80";
   const sampleCleanPhoto = "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80";
 

@@ -46,6 +46,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "test:api": "tsx src/__tests__/api.test.ts",
     "test:location": "tsx src/__tests__/location.test.ts",
     "test:anticheat": "tsx src/__tests__/antiCheat.test.ts",
     "test:postcard": "tsx src/__tests__/postCard.test.ts",

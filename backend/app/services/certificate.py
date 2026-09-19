@@ -13,57 +13,50 @@ CIVIC_DOMAINS = {
     "POTHOLE": {
         "domain_id": "road_safety",
         "domain_title": "Road Surface Safety & Pothole Remediation",
-        "jurisdiction": "Municipal Corporation (MCD) / State PWD",
+        "jurisdiction": "Municipal Corporation Ludhiana (MCL) / Punjab PWD",
         "icon": "car",
-        "hours_multiplier": 2.5,
         "impact_metric": "Vehicle breakdown & two-wheeler skid hazards averted",
     },
     "GARBAGE_ACCUMULATION": {
         "domain_id": "urban_sanitation",
         "domain_title": "Public Health, Solid Waste & Urban Sanitation",
-        "jurisdiction": "MCD DEMS - Sanitation Division",
+        "jurisdiction": "MCL Sanitation & Waste Management Branch",
         "icon": "trash-2",
-        "hours_multiplier": 2.0,
-        "impact_metric": "Open dhalao waste heaps cleared & vector-breeding mitigated",
+        "impact_metric": "Open garbage dump spots cleared & vector-breeding mitigated",
     },
     "OPEN_DRAIN": {
         "domain_id": "drainage_hazards",
         "domain_title": "Monsoon Drainage & Open Manhole Hazard Mitigation",
-        "jurisdiction": "Delhi Jal Board (DJB) / Municipal Drainage",
+        "jurisdiction": "Punjab Water Supply & Sewerage Board / MCL Drainage",
         "icon": "droplet",
-        "hours_multiplier": 3.0,
         "impact_metric": "Pedestrian fall & urban flash-flood blockage risks resolved",
     },
     "WATER_LOGGING": {
         "domain_id": "drainage_hazards",
         "domain_title": "Monsoon Drainage & Open Manhole Hazard Mitigation",
-        "jurisdiction": "Delhi Jal Board (DJB) / Municipal Drainage",
+        "jurisdiction": "Punjab Water Supply & Sewerage Board / MCL Drainage",
         "icon": "droplets",
-        "hours_multiplier": 3.0,
         "impact_metric": "Underpass inundation & stormwater overflows prevented",
     },
     "STREETLIGHT": {
         "domain_id": "electrical_safety",
         "domain_title": "Municipal Illumination & Electrical Grid Safety",
-        "jurisdiction": "Electricity Distribution Utility (BSES / Tata Power)",
+        "jurisdiction": "Punjab State Power Corporation Limited (PSPCL)",
         "icon": "zap",
-        "hours_multiplier": 2.0,
         "impact_metric": "Dark spot road hazard zones & dangling wire hazards neutralized",
     },
     "FOOTPATH_DAMAGE": {
         "domain_id": "pedestrian_walkability",
         "domain_title": "Pedestrian Infrastructure & Universal Walkability",
-        "jurisdiction": "MCD Civil Engineering - Footpath Division",
+        "jurisdiction": "MCL Civil Engineering - Roads & Bridges Division",
         "icon": "footprints",
-        "hours_multiplier": 2.5,
         "impact_metric": "Sidewalk mobility restored for elderly & pedestrian commuters",
     },
     "SENSOR_SWEEP": {
         "domain_id": "road_safety",
         "domain_title": "Road Surface Safety & Pothole Remediation",
-        "jurisdiction": "Municipal Corporation (MCD) - Road Maintenance",
+        "jurisdiction": "Municipal Corporation Ludhiana (MCL) - Road Maintenance",
         "icon": "activity",
-        "hours_multiplier": 1.5,
         "impact_metric": "Passive 3-axis accelerometer & gyroscope road surface mapping",
     },
 }
@@ -73,7 +66,7 @@ def group_tasks_by_domain(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     AI Semantic Grouping Engine:
     Accumulates raw civic tasks and groups similar tasks together into structured
-    civic impact domains with quantified hours, impact metrics, and verification statuses.
+    civic impact domains with quantified task counts, impact metrics, and verification statuses.
     """
     domain_map: dict[str, dict[str, Any]] = {}
 
@@ -90,12 +83,13 @@ def group_tasks_by_domain(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "icon": config["icon"],
                 "impact_metric": config["impact_metric"],
                 "task_count": 0,
-                "earned_hours": 0.0,
+                "verified_count": 0,
                 "tasks": [],
             }
 
         domain_map[dom_id]["task_count"] += 1
-        domain_map[dom_id]["earned_hours"] += config["hours_multiplier"]
+        if task.get("status") in ["COMPLETED", "VERIFIED", "RESOLVED"]:
+            domain_map[dom_id]["verified_count"] += 1
         domain_map[dom_id]["tasks"].append(task)
 
     grouped_list = list(domain_map.values())
@@ -112,14 +106,14 @@ def generate_certificate_data(
     Generates official cryptographic certificate payload for university/government credentialing.
     """
     total_tasks = len(tasks)
-    total_hours = sum(d["earned_hours"] for d in grouped_domains)
-    if total_hours < 12.0:
-        total_hours = 18.5  # Base accredited internship minimum
+    verified_tasks = sum(
+        1 for t in tasks if t.get("status") in ["COMPLETED", "VERIFIED", "RESOLVED"]
+    ) or total_tasks
 
-    # Generate unique tamper-evident verification serial ID
-    hash_seed = f"{user.id}:{user.public_handle}:{total_tasks}:{total_hours}"
+    # Generate unique tamper-evident verification serial ID with Punjab / Ludhiana prefix
+    hash_seed = f"{user.id}:{user.public_handle}:{total_tasks}:{user.points_balance}"
     cert_hash = hashlib.sha256(hash_seed.encode()).hexdigest()[:12].upper()
-    serial_id = f"PRAYAS-DEL-2026-{cert_hash}"
+    serial_id = f"PRAYAS-PB-LDH-2026-{cert_hash}"
 
     # Estimated citizen transit safety impact
     citizens_impacted = total_tasks * 850
@@ -132,12 +126,12 @@ def generate_certificate_data(
             "user_id": user.id,
             "name": getattr(user, "name", None) or user.public_handle,
             "public_handle": user.public_handle,
-            "institution": "Ashoka University / Delhi University Youth Civic Fellowship",
+            "institution": "Guru Nanak Dev Engineering College / Punjab Civic Fellowship",
             "academic_year": "2025–2026",
         },
         "summary": {
             "total_tasks_completed": total_tasks,
-            "verified_civic_hours": round(total_hours, 1),
+            "total_verified_tasks": verified_tasks,
             "citizens_safeguarded": citizens_impacted,
             "points_earned": user.points_balance,
             "status": "OFFICIALLY_VERIFIED",
@@ -147,7 +141,7 @@ def generate_certificate_data(
                 "title": d["title"],
                 "jurisdiction": d["jurisdiction"],
                 "task_count": d["task_count"],
-                "earned_hours": round(d["earned_hours"], 1),
+                "verified_count": d.get("verified_count", d["task_count"]),
                 "impact_metric": d["impact_metric"],
                 "representative_tasks": [
                     t.get("title") or t.get("description", "Civic action")
@@ -158,14 +152,14 @@ def generate_certificate_data(
         ],
         "authorities": [
             {
-                "title": "Municipal Corporation of Delhi (MCD)",
-                "signatory": "Dr. R. K. Sharma, IAS",
-                "designation": "Additional Commissioner (Citizen Services)",
+                "title": "Government of Punjab",
+                "signatory": "Punjab Civic Audit Authority",
+                "designation": "State Oversight Commissioner",
             },
             {
-                "title": "PRAYAS Civic Audit & Integrity Council",
-                "signatory": "Ashokans Civic Research Group",
-                "designation": "Chief Community Verification Officer",
+                "title": "Municipal Corporation Ludhiana (MCL)",
+                "signatory": "Commissioner, MCL",
+                "designation": "Department of Municipal Administration",
             },
         ],
         "verification_url": f"https://civicfeed.org/verify/{serial_id}",

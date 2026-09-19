@@ -79,7 +79,7 @@ export interface CivicTask {
   description: string;
   ward_id: string;
   status: string;
-  earned_hours: number;
+  earned_hours?: number;
   timestamp: string;
 }
 
@@ -90,7 +90,8 @@ export interface GroupedDomain {
   icon: string;
   impact_metric: string;
   task_count: number;
-  earned_hours: number;
+  earned_hours?: number;
+  verified_count?: number;
   tasks: CivicTask[];
 }
 
@@ -98,6 +99,8 @@ export interface UserTasksResponse {
   user_id: string;
   public_handle: string;
   total_unique_tasks: number;
+  total_verified_tasks?: number;
+  citizens_safeguarded?: number;
   tasks: CivicTask[];
   grouped_domains: GroupedDomain[];
 }
@@ -115,7 +118,8 @@ export interface CertificateData {
   };
   summary: {
     total_tasks_completed: number;
-    verified_civic_hours: number;
+    total_verified_tasks?: number;
+    verified_civic_hours?: number;
     citizens_safeguarded: number;
     points_earned: number;
     status: string;
@@ -124,7 +128,8 @@ export interface CertificateData {
     title: string;
     jurisdiction: string;
     task_count: number;
-    earned_hours: number;
+    earned_hours?: number;
+    verified_count?: number;
     impact_metric: string;
     representative_tasks: string[];
   }[];

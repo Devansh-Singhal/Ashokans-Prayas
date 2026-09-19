@@ -13,16 +13,16 @@ PROVIDER_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek/deepseek-v4.1-flash"
 
 SYSTEM_PROMPT = """You are the CivicFeed Vision & Municipal Governance Intelligence Engine.
 Analyze the provided urban infrastructure photograph.
-You must accurately identify the civic defect and map it to the EXACT responsible government department in an Indian metropolitan context (e.g. MCD, State PWD, NHAI, Delhi Jal Board, BSES/Discom).
+You must accurately identify the civic defect and map it to the EXACT responsible government department in an Indian metropolitan context (e.g. Municipal Corporation Ludhiana, Punjab PWD, NHAI, Punjab Water Supply & Sewerage Board, PSPCL).
 
-Indian Jurisdictional Guidelines:
-1. Municipal Corporation (MCD) - Road Maintenance: Internal colony roads, residential lanes, secondary roads, minor asphalt potholes, curb damage.
-2. Public Works Department (State PWD) - Arterial Roads & Flyovers: Multi-lane divided city avenues, major corridors, ring roads, flyovers, arterial potholes.
-3. National Highways Authority of India (NHAI): Access-controlled expressways, tollways, National Highways (NH).
-4. MCD Department of Environment Management Services (DEMS - Sanitation): Community garbage vats, dhalao dumps, street refuse heaps, market waste, plastic debris.
-5. Delhi Jal Board (DJB) / Municipal Drainage Division: Open or broken sewer manholes, overflowing sewage lines, blocked stormwater drains, street waterlogging.
-6. Electricity Distribution Utility (BSES / Tata Power / MCD Electrical): Defunct sodium streetlamps, unlit poles, dangling live cables, leaning transformer boxes.
-7. MCD Civil Engineering - Footpath & Pedestrian Division: Broken paver tiles, damaged pedestrian walkways, missing curb ramps.
+Indian Jurisdictional Guidelines (Punjab & Municipal Corporation Ludhiana):
+1. Municipal Corporation Ludhiana (MCL) - Road Maintenance: Internal colony roads, residential lanes, secondary roads, minor asphalt potholes, curb damage.
+2. Public Works Department (Punjab PWD) - Arterial Roads & Flyovers: Multi-lane divided city avenues, major corridors, ring roads, flyovers, arterial potholes.
+3. National Highways Authority of India (NHAI - Punjab Region): Access-controlled expressways, tollways, National Highways (NH).
+4. MCL Sanitation & Solid Waste Management Division: Community garbage vats, dhalao dumps, street refuse heaps, market waste, plastic debris.
+5. Punjab Water Supply & Sewerage Board (PWSSB) / Municipal Drainage: Open or broken sewer manholes, overflowing sewage lines, blocked stormwater drains, street waterlogging.
+6. Punjab State Power Corporation Limited (PSPCL) - Electrical Grid & Streetlighting: Defunct sodium streetlamps, unlit poles, dangling live cables, leaning transformer boxes.
+7. MCL Civil Engineering - Footpath & Pedestrian Division: Broken paver tiles, damaged pedestrian walkways, missing curb ramps.
 
 Anti-Spoofing & Safety:
 - Detect if the photo was taken of a computer screen, monitor bezel, moiré pixel pattern, or printed photograph (set is_screen_or_spoof: true).
@@ -128,8 +128,8 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
     if "drain" in name or "sewer" in name or "manhole" in name:
         return {
             "category": "OPEN_DRAIN",
-            "target_department": "Delhi Jal Board (DJB) / Municipal Drainage Division",
-            "department_reasoning": "Heuristic: Subsurface drainage, manholes, and sewer conduits are governed by the Jal Board and Municipal Drainage engineering.",
+            "target_department": "Punjab Water Supply & Sewerage Board (PWSSB) / Municipal Drainage",
+            "department_reasoning": "Heuristic: Subsurface drainage, manholes, and sewer conduits are governed by the Punjab Water Supply & Sewerage Board and Municipal Drainage engineering.",
             "confidence": 0.90,
             "severity": 5,
             "severity_justification": "Critical life hazard: uncovered manhole or broken drainage slab presents lethal fall risk for pedestrians.",

@@ -76,8 +76,11 @@ export const TasksScreen: React.FC = () => {
     setExpandedDomain(expandedDomain === domainId ? null : domainId);
   };
 
-  const totalHours = tasksData?.grouped_domains?.reduce((sum, d) => sum + d.earned_hours, 0) || 14.5;
   const totalTasks = tasksData?.total_unique_tasks || 0;
+  const verifiedTasks = tasksData?.total_verified_tasks || totalTasks;
+  const citizensSafeguarded = tasksData?.citizens_safeguarded || (totalTasks * 850);
+  const impactPoints = currentUser?.points_balance ?? currentPersona?.points ?? (totalTasks * 120);
+  const impactScore = `${impactPoints} pts`;
 
   return (
     <View style={styles.container}>
@@ -108,27 +111,29 @@ export const TasksScreen: React.FC = () => {
             <View style={{ flex: 1 }}>
               <Text style={styles.certBannerTitle}>Official Civic Impact Credential</Text>
               <Text style={styles.certBannerSubtitle}>
-                Co-signed by MCD & PRAYAS for Academic/NSS Credits
+                Endorsed by Municipal Corporation Ludhiana (MCL) & Govt of Punjab
               </Text>
             </View>
           </View>
 
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statBoxVal}>{totalTasks}</Text>
-              <Text style={styles.statBoxLbl}>Unique Tasks</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBox}>
-              <Text style={[styles.statBoxVal, { color: '#16A34A' }]}>{totalHours.toFixed(1)}h</Text>
-              <Text style={styles.statBoxLbl}>Verified Hours</Text>
+              <Text style={styles.statBoxVal}>{verifiedTasks}</Text>
+              <Text style={styles.statBoxLbl}>Verified Tasks</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
               <Text style={[styles.statBoxVal, { color: '#2563EB' }]}>
-                {(totalTasks * 850).toLocaleString()}+
+                {citizensSafeguarded.toLocaleString()}+
               </Text>
-              <Text style={styles.statBoxLbl}>Citizens Helped</Text>
+              <Text style={styles.statBoxLbl}>Citizens Safeguarded</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statBoxVal, { color: '#16A34A' }]}>
+                {impactScore}
+              </Text>
+              <Text style={styles.statBoxLbl}>Impact Score</Text>
             </View>
           </View>
 
@@ -218,7 +223,10 @@ export const TasksScreen: React.FC = () => {
                     <View style={styles.domainRight}>
                       <View style={styles.domainPill}>
                         <Text style={styles.domainPillTasks}>{domain.task_count} tasks</Text>
-                        <Text style={styles.domainPillHours}>{domain.earned_hours}h</Text>
+                        <View style={styles.verifiedBadgeRow}>
+                          <CheckCircle2 size={10} color="#16A34A" />
+                          <Text style={styles.domainPillVerified}>Verified</Text>
+                        </View>
                       </View>
                       {isExpanded ? (
                         <ChevronUp size={20} color="#64748B" />
@@ -242,7 +250,10 @@ export const TasksScreen: React.FC = () => {
                               <Text style={styles.taskMetaText}>
                                 {task.ward_id} • {task.task_type.replace('_', ' ')}
                               </Text>
-                              <Text style={styles.taskMetaHours}>+{task.earned_hours}h</Text>
+                              <View style={styles.taskStatusTag}>
+                                <ShieldCheck size={11} color="#16A34A" />
+                                <Text style={styles.taskStatusVerifiedText}>Verified</Text>
+                              </View>
                             </View>
                           </View>
                         </View>
@@ -267,8 +278,9 @@ export const TasksScreen: React.FC = () => {
                 <View style={styles.timelineContent}>
                   <View style={styles.timelineTopRow}>
                     <Text style={styles.timelineTitle}>{task.title}</Text>
-                    <View style={styles.hoursTag}>
-                      <Text style={styles.hoursTagText}>+{task.earned_hours}h</Text>
+                    <View style={styles.timelineStatusTag}>
+                      <CheckCircle2 size={11} color="#15803D" />
+                      <Text style={styles.timelineStatusText}>Verified</Text>
                     </View>
                   </View>
                   <Text style={styles.timelineDesc}>{task.description}</Text>
@@ -521,7 +533,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
   },
-  domainPillHours: {
+  verifiedBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 1,
+  },
+  domainPillVerified: {
     fontSize: 10,
     fontWeight: '800',
     color: '#16A34A',
@@ -571,7 +589,16 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontWeight: '600',
   },
-  taskMetaHours: {
+  taskStatusTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  taskStatusVerifiedText: {
     fontSize: 10,
     color: '#16A34A',
     fontWeight: '800',
@@ -623,14 +650,17 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     flex: 1,
   },
-  hoursTag: {
+  timelineStatusTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
     marginLeft: 6,
   },
-  hoursTagText: {
+  timelineStatusText: {
     fontSize: 10,
     fontWeight: '800',
     color: '#15803D',

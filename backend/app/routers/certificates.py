@@ -27,9 +27,8 @@ DEMO_SIMULATED_TASKS = [
         "category": "POTHOLE",
         "title": "Passive Gyroscope Pothole Detection Sweep (14.2 km corridor)",
         "description": "Continuous 3-axis accelerometer and gyroscope vibration telemetry captured along Dugri-Gill Road corridor.",
-        "ward_id": "WARD_DELHI_14",
+        "ward_id": "WARD_LUDHIANA_14",
         "status": "COMPLETED",
-        "earned_hours": 2.5,
         "timestamp": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
     },
     {
@@ -38,9 +37,8 @@ DEMO_SIMULATED_TASKS = [
         "category": "OPEN_DRAIN",
         "title": "Monsoon Sewer Aperture Pre-Flood Audit",
         "description": "Field visual audit of 4 stormwater drain culvert grates ahead of seasonal monsoon alerts.",
-        "ward_id": "WARD_DELHI_14",
+        "ward_id": "WARD_LUDHIANA_14",
         "status": "COMPLETED",
-        "earned_hours": 3.0,
         "timestamp": (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(),
     },
     {
@@ -49,9 +47,8 @@ DEMO_SIMULATED_TASKS = [
         "category": "GARBAGE_ACCUMULATION",
         "title": "Community Dhalao Vat Clearance Verification",
         "description": "Post-clearance verification of municipal solid waste removal with geo-anchored photo evidence.",
-        "ward_id": "WARD_DELHI_14",
+        "ward_id": "WARD_LUDHIANA_14",
         "status": "COMPLETED",
-        "earned_hours": 2.0,
         "timestamp": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
     },
     {
@@ -59,10 +56,9 @@ DEMO_SIMULATED_TASKS = [
         "task_type": "CIVIC_AUDIT",
         "category": "FOOTPATH_DAMAGE",
         "title": "Pedestrian Walkway Paver Dislodgement Audit",
-        "description": "Pedestrian safety sweep identifying displaced curb blocks obstructing elderly transit near metro station.",
-        "ward_id": "WARD_DELHI_14",
+        "description": "Pedestrian safety sweep identifying displaced curb blocks obstructing elderly transit near bus stand.",
+        "ward_id": "WARD_LUDHIANA_14",
         "status": "COMPLETED",
-        "earned_hours": 2.5,
         "timestamp": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(),
     },
 ]
@@ -101,7 +97,6 @@ async def get_user_tasks(
             "description": f"Geo-tagged civic report filed in {t.ward_id} with severity {t.severity}/5.",
             "ward_id": t.ward_id,
             "status": t.status,
-            "earned_hours": 2.5 if t.category == "POTHOLE" else 2.0,
             "timestamp": t.created_at.isoformat() if t.created_at else "",
         })
 
@@ -112,9 +107,8 @@ async def get_user_tasks(
             "category": "POTHOLE",
             "title": "Two-Sided Contractor Resolution Verification",
             "description": f"On-site photo verification of municipal contractor work. Earned {v.credited_points} pts.",
-            "ward_id": "WARD_DELHI_14",
+            "ward_id": "WARD_LUDHIANA_14",
             "status": "VERIFIED",
-            "earned_hours": 2.0,
             "timestamp": v.created_at.isoformat() if v.created_at else "",
         })
 
@@ -127,11 +121,14 @@ async def get_user_tasks(
 
     # AI Grouping into domains
     grouped = group_tasks_by_domain(tasks)
+    total_verified = sum(1 for t in tasks if t.get("status") in ["COMPLETED", "VERIFIED", "RESOLVED"])
 
     return {
         "user_id": user_id,
         "public_handle": user.public_handle,
         "total_unique_tasks": len(tasks),
+        "total_verified_tasks": total_verified,
+        "citizens_safeguarded": len(tasks) * 850,
         "tasks": tasks,
         "grouped_domains": grouped,
     }

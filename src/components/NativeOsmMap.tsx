@@ -23,8 +23,8 @@ export const NativeOsmMap: React.FC<Props> = ({
 }) => {
   const fallbackCenter = area?.center ?? userCoords;
   const fallbackZoom = area?.zoom ?? 15;
-  const pillLabel = area?.pillLabel ?? 'WARD 14 • CENTRAL DELHI GEOSPATIAL RADAR';
-  const userPopupPlace = area?.userPopupPlace ?? 'Ward 14, Delhi';
+  const pillLabel = area?.pillLabel ?? 'WARD 14 • LUDHIANA GEOSPATIAL RADAR';
+  const userPopupPlace = area?.userPopupPlace ?? 'Ward 14, Ludhiana';
 
   const centerLat = selectedTicket?.latitude ?? fallbackCenter.latitude;
   const centerLng = selectedTicket?.longitude ?? fallbackCenter.longitude;
