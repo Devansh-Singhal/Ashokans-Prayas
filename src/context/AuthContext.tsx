@@ -17,7 +17,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
   {
     id: 'user-anjali-id',
     name: 'Anjali (Stranger Auditor)',
-    role: 'NSS College Volunteer',
+    role: 'College Volunteer',
     handle: 'Auditor_84F1',
     phone: '+919822233344',
     isUnder18: false,

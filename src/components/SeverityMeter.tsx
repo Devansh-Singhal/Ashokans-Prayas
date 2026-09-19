@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 interface Props {
   severity: number; // 1 to 5
@@ -87,8 +88,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   label: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
+    ...NUMERIC,
   },
 });

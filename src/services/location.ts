@@ -85,11 +85,11 @@ export async function getCurrentGPSDetailed(): Promise<{ coords: Coordinates; is
     // Fallback if running on simulator or web without GPS
   }
 
-  // Default reference coordinate (e.g. Connaught Place / Ward 14 Delhi)
+  // Default reference coordinate (Dugri Road, Ludhiana / Ward 14 Ludhiana, Punjab)
   return {
     coords: {
-      latitude: 28.6289,
-      longitude: 77.2065,
+      latitude: 30.8785,
+      longitude: 75.8462,
     },
     isFallback: true,
   };
@@ -104,18 +104,18 @@ export async function getCurrentGPS(): Promise<Coordinates> {
 }
 
 /**
- * Map areas. Delhi Ward 14 is the original demo ward; Ludhiana (Dugri Road,
- * OSM-verified via Nominatim) is the contractor-accountability case study.
- * Additive config only — GPS helpers above are untouched.
+ * Map areas. Ward 14 now refers to Ludhiana, Punjab (Dugri–Gill Road Corridor,
+ * OSM-verified via Nominatim). LUDHIANA_CASE_STUDY is the contractor-accountability
+ * case study sharing the same corridor.
  */
 export const DELHI_WARD_14 = {
   wardId: 'WARD_DELHI_14',
-  shortLabel: 'Ward 14, Delhi',
-  mapLabel: 'WARD 14 • CENTRAL DELHI GEOSPATIAL RADAR',
-  userLabel: 'Ward 14, Delhi',
+  shortLabel: 'Ward 14, Ludhiana',
+  mapLabel: 'WARD 14 • LUDHIANA GEOSPATIAL RADAR',
+  userLabel: 'Ward 14, Ludhiana, Punjab',
   areaTitle: 'WARD 14 GEOSPATIAL RADAR',
-  areaSubtitle: 'Central Delhi Corridor',
-  center: { latitude: 28.6289, longitude: 77.2065 },
+  areaSubtitle: 'Dugri–Gill Road Corridor, Ludhiana',
+  center: { latitude: 30.8785, longitude: 75.8462 },
   zoom: 15,
 } as const;
 

@@ -1,66 +1,46 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { MapPin, Navigation, ShieldCheck } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Image,
-  ScrollView,
-  useWindowDimensions,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { MapPin, Navigation, ExternalLink, ShieldCheck } from 'lucide-react-native';
-import { Ticket, TicketStatus } from '../types';
-import { api } from '../services/api';
+import {
+  OpenDrainHazardIcon,
+  PotholeDefectIcon,
+  StreetlightDefectIcon,
+  WasteAccumulationIcon,
+} from '../components/CivicIcons';
+import { SeverityMeter } from '../components/SeverityMeter';
 import { ShowMap } from '../components/showMap';
 import { StatusBadge } from '../components/StatusBadge';
-import { SeverityMeter } from '../components/SeverityMeter';
-import { calculateHaversineDistance, getCurrentGPS, DELHI_WARD_14, LUDHIANA_CASE_STUDY } from '../services/location';
-import {
-  PotholeDefectIcon,
-  WasteAccumulationIcon,
-  StreetlightDefectIcon,
-  OpenDrainHazardIcon,
-} from '../components/CivicIcons';
+import { api } from '../services/api';
+import { calculateHaversineDistance, DELHI_WARD_14, getCurrentGPS } from '../services/location';
+import { Ticket } from '../types';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
-type Ward = 'feed' | 'case';
 type FilterType = 'ALL' | 'REPORTED' | 'PROVISIONAL_FIX' | 'RESOLVED' | 'WEATHER_OCCLUDED';
 
-const WARD_AREAS = {
-  feed: {
-    wardId: DELHI_WARD_14.wardId,
-    fallbackLabel: 'Demo location — enable GPS for live audit',
-    emptyPlace: DELHI_WARD_14.shortLabel,
-    area: {
-      center: { ...DELHI_WARD_14.center },
-      zoom: DELHI_WARD_14.zoom,
-      pillLabel: DELHI_WARD_14.mapLabel,
-      radarTitle: DELHI_WARD_14.areaTitle,
-      radarSubtitle: DELHI_WARD_14.areaSubtitle,
-      userPopupPlace: DELHI_WARD_14.userLabel,
-      iframeTitle: 'CivicFeed Ward 14 Map',
-    },
-  },
-  case: {
-    wardId: LUDHIANA_CASE_STUDY.wardId,
-    fallbackLabel: 'Case-study corridor — enable GPS for live audit',
-    emptyPlace: LUDHIANA_CASE_STUDY.shortLabel,
-    area: {
-      center: { ...LUDHIANA_CASE_STUDY.center },
-      zoom: LUDHIANA_CASE_STUDY.zoom,
-      pillLabel: LUDHIANA_CASE_STUDY.mapLabel,
-      radarTitle: LUDHIANA_CASE_STUDY.areaTitle,
-      radarSubtitle: LUDHIANA_CASE_STUDY.areaSubtitle,
-      userPopupPlace: LUDHIANA_CASE_STUDY.userLabel,
-      iframeTitle: 'CivicFeed Ludhiana Case Study Map',
-    },
+const ward = {
+  wardId: DELHI_WARD_14.wardId,
+  fallbackLabel: 'Demo location — enable GPS for live audit',
+  emptyPlace: DELHI_WARD_14.shortLabel,
+  area: {
+    center: { ...DELHI_WARD_14.center },
+    zoom: DELHI_WARD_14.zoom,
+    pillLabel: DELHI_WARD_14.mapLabel,
+    radarTitle: DELHI_WARD_14.areaTitle,
+    radarSubtitle: DELHI_WARD_14.areaSubtitle,
+    userPopupPlace: DELHI_WARD_14.userLabel,
+    iframeTitle: 'CivicFeed Ward 14 Map',
   },
 } as const;
 
 export const MapScreen: React.FC = () => {
-  const { width } = useWindowDimensions();
-  const [activeWard, setActiveWard] = useState<Ward>('case');
-  const ward = WARD_AREAS[activeWard];
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
@@ -85,7 +65,7 @@ export const MapScreen: React.FC = () => {
   useEffect(() => {
     setSelectedTicket(null);
     loadTickets();
-  }, [activeWard]);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -134,73 +114,15 @@ export const MapScreen: React.FC = () => {
 
   const selectedDistance = selectedTicket
     ? calculateHaversineDistance(
-        userCoords.latitude,
-        userCoords.longitude,
-        selectedTicket.latitude,
-        selectedTicket.longitude
-      )
+      userCoords.latitude,
+      userCoords.longitude,
+      selectedTicket.latitude,
+      selectedTicket.longitude
+    )
     : null;
 
   return (
     <View style={styles.container}>
-      {/* Ward switcher: live feed vs Ludhiana case study (additive, above filters) */}
-      <View style={styles.wardContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-        >
-          <TouchableOpacity
-            style={[styles.filterChip, activeWard === 'case' && styles.filterChipActive]}
-            onPress={() => setActiveWard('case')}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                activeWard === 'case' && styles.filterChipTextActive,
-              ]}
-            >
-              Ludhiana Case Study
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterChip, activeWard === 'feed' && styles.filterChipActive]}
-            onPress={() => setActiveWard('feed')}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                activeWard === 'feed' && styles.filterChipTextActive,
-              ]}
-            >
-              Ward 14 Live
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
-      {/* Case-study explainer (renders only on the case tab) */}
-      {activeWard === 'case' && (
-        <View style={styles.caseCard}>
-          <Text style={styles.caseTitle}>Ludhiana — Dugri &amp; Gill Road: the failure CivicFeed fixes</Text>
-          <Text style={styles.caseBody}>
-            Major roads left broken and excavated for 6+ months after water-pipeline work. When a
-            pothole opens or a road caves in, the Municipal Corporation blames the Water Board, the
-            Water Board blames the contractor, and the contractor claims monsoon delays — while the
-            ticket sits marked work completed on a private portal and the fund is disbursed.
-          </Text>
-          <Text style={styles.caseBody}>
-            Contracts require restoring roads to original condition, but nothing public verifies it.
-            CivicFeed publishes every excavated road on an open hyperlocal feed and locks resolution
-            to a 50-meter on-ground citizen check — dug-up roads can&apos;t be abandoned without
-            cross-departmental exposure.
-          </Text>
-        </View>
-      )}
-
       {/* 1. Header Filter Bar (Scrollable for mobile ergonomics) */}
       <View style={styles.filterContainer}>
         <ScrollView
@@ -212,6 +134,9 @@ export const MapScreen: React.FC = () => {
             style={[styles.filterChip, activeFilter === 'ALL' && styles.filterChipActive]}
             onPress={() => setActiveFilter('ALL')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show all tickets"
+            accessibilityState={{ selected: activeFilter === 'ALL' }}
           >
             <Text
               style={[
@@ -227,6 +152,9 @@ export const MapScreen: React.FC = () => {
             style={[styles.filterChip, activeFilter === 'REPORTED' && styles.filterChipActive]}
             onPress={() => setActiveFilter('REPORTED')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show open tickets"
+            accessibilityState={{ selected: activeFilter === 'REPORTED' }}
           >
             <View style={[styles.filterDot, { backgroundColor: '#EF4444' }]} />
             <Text
@@ -246,6 +174,9 @@ export const MapScreen: React.FC = () => {
             ]}
             onPress={() => setActiveFilter('PROVISIONAL_FIX')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show tickets with fix uploaded"
+            accessibilityState={{ selected: activeFilter === 'PROVISIONAL_FIX' }}
           >
             <View style={[styles.filterDot, { backgroundColor: '#F59E0B' }]} />
             <Text
@@ -262,6 +193,9 @@ export const MapScreen: React.FC = () => {
             style={[styles.filterChip, activeFilter === 'RESOLVED' && styles.filterChipActive]}
             onPress={() => setActiveFilter('RESOLVED')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show verified tickets"
+            accessibilityState={{ selected: activeFilter === 'RESOLVED' }}
           >
             <View style={[styles.filterDot, { backgroundColor: '#10B981' }]} />
             <Text
@@ -278,6 +212,9 @@ export const MapScreen: React.FC = () => {
             style={[styles.filterChip, activeFilter === 'WEATHER_OCCLUDED' && styles.filterChipActive]}
             onPress={() => setActiveFilter('WEATHER_OCCLUDED')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show submerged tickets"
+            accessibilityState={{ selected: activeFilter === 'WEATHER_OCCLUDED' }}
           >
             <View style={[styles.filterDot, { backgroundColor: '#38BDF8' }]} />
             <Text
@@ -299,7 +236,13 @@ export const MapScreen: React.FC = () => {
         </View>
       )}
       {tickets.length === 0 && loadError && (
-        <TouchableOpacity style={styles.retryBanner} onPress={loadTickets} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.retryBanner}
+          onPress={loadTickets}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading map tickets"
+        >
           <Text style={styles.retryBannerText}>Could not load map tickets. Tap to retry.</Text>
         </TouchableOpacity>
       )}
@@ -387,31 +330,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#334155',
     zIndex: 10,
   },
-  wardContainer: {
-    backgroundColor: '#1E293B',
-    paddingTop: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-    zIndex: 11,
-  },
-  caseCard: {
-    backgroundColor: '#0F172A',
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  caseTitle: {
-    color: '#F8FAFC',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  caseBody: {
-    color: '#94A3B8',
-    fontSize: 11,
-    lineHeight: 16,
-  },
   filterScroll: {
     paddingHorizontal: 16,
     flexDirection: 'row',
@@ -426,18 +344,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 9999,
-    minHeight: 36,
+    minHeight: 44,
   },
   filterChipActive: {
     backgroundColor: '#0284C7',
     borderColor: '#38BDF8',
   },
   filterChipText: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#94A3B8',
-    fontSize: 12,
-    fontWeight: '700',
   },
   filterChipTextActive: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#FFFFFF',
   },
   filterDot: {
@@ -491,9 +409,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   drawerCategoryText: {
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#F8FAFC',
-    fontSize: 12,
-    fontWeight: '700',
   },
   drawerContentRow: {
     flexDirection: 'row',
@@ -520,9 +438,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   drawerMetaLabel: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '600',
   },
   distanceRow: {
     flexDirection: 'row',
@@ -530,9 +447,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   distanceText: {
+    ...TYPOGRAPHY.caption,
+    ...NUMERIC,
     color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '600',
   },
   actionRow: {
     flexDirection: 'row',
@@ -549,9 +466,8 @@ const styles = StyleSheet.create({
     borderColor: '#10B981',
   },
   auditPromptText: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#A7F3D0',
-    fontSize: 11,
-    fontWeight: '700',
   },
   fallbackBanner: {
     backgroundColor: '#FEF3C7',
@@ -559,8 +475,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   fallbackText: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#92400E',
     textAlign: 'center',
   },
@@ -572,8 +488,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#334155',
   },
   retryBannerText: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
     color: '#38BDF8',
     textAlign: 'center',
   },

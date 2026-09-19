@@ -13,16 +13,16 @@ PROVIDER_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek/deepseek-v4.1-flash"
 
 SYSTEM_PROMPT = """You are the CivicFeed Vision & Municipal Governance Intelligence Engine.
 Analyze the provided urban infrastructure photograph.
-You must accurately identify the civic defect and map it to the EXACT responsible government department in an Indian metropolitan context (e.g. MCD, State PWD, NHAI, Delhi Jal Board, BSES/Discom).
+You must accurately identify the civic defect and map it to the EXACT responsible government department in a Ludhiana, Punjab context (e.g. Ludhiana Municipal Corporation, Punjab PWD, NHAI, Punjab Water Supply & Sewerage Board, PSPCL/Electrical).
 
 Indian Jurisdictional Guidelines:
-1. Municipal Corporation (MCD) - Road Maintenance: Internal colony roads, residential lanes, secondary roads, minor asphalt potholes, curb damage.
-2. Public Works Department (State PWD) - Arterial Roads & Flyovers: Multi-lane divided city avenues, major corridors, ring roads, flyovers, arterial potholes.
+1. Ludhiana Municipal Corporation - Road Maintenance: Internal colony roads, residential lanes, secondary roads, minor asphalt potholes, curb damage.
+2. Public Works Department (Punjab PWD) - Arterial Roads & Flyovers: Multi-lane divided city avenues, major corridors, ring roads, flyovers, arterial potholes.
 3. National Highways Authority of India (NHAI): Access-controlled expressways, tollways, National Highways (NH).
-4. MCD Department of Environment Management Services (DEMS - Sanitation): Community garbage vats, dhalao dumps, street refuse heaps, market waste, plastic debris.
-5. Delhi Jal Board (DJB) / Municipal Drainage Division: Open or broken sewer manholes, overflowing sewage lines, blocked stormwater drains, street waterlogging.
-6. Electricity Distribution Utility (BSES / Tata Power / MCD Electrical): Defunct sodium streetlamps, unlit poles, dangling live cables, leaning transformer boxes.
-7. MCD Civil Engineering - Footpath & Pedestrian Division: Broken paver tiles, damaged pedestrian walkways, missing curb ramps.
+4. Ludhiana Municipal Corporation Department of Environment Management Services (DEMS - Sanitation): Community garbage vats, dhalao dumps, street refuse heaps, market waste, plastic debris.
+5. Punjab Water Supply & Sewerage Board (PWSSB) / Municipal Drainage Division: Open or broken sewer manholes, overflowing sewage lines, blocked stormwater drains, street waterlogging.
+6. Electricity Distribution Utility (PSPCL / Municipal Electrical Division): Defunct sodium streetlamps, unlit poles, dangling live cables, leaning transformer boxes.
+7. Ludhiana Municipal Corporation Civil Engineering - Footpath & Pedestrian Division: Broken paver tiles, damaged pedestrian walkways, missing curb ramps.
 
 Anti-Spoofing & Safety:
 - Detect if the photo was taken of a computer screen, monitor bezel, moiré pixel pattern, or printed photograph (set is_screen_or_spoof: true).
@@ -68,8 +68,8 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
     if "pothole" in name or "pothol" in name:
         return {
             "category": "POTHOLE",
-            "target_department": "Public Works Department (State PWD) - Arterial Road Division",
-            "department_reasoning": "Heuristic: Major asphalt pavement fracture identified. Road width and wear pattern indicate an arterial corridor under State PWD jurisdiction.",
+            "target_department": "Public Works Department (Punjab PWD) - Arterial Road Division",
+            "department_reasoning": "Heuristic: Major asphalt pavement fracture identified. Road width and wear pattern indicate an arterial corridor under Punjab PWD jurisdiction.",
             "confidence": 0.90,
             "severity": 4,
             "severity_justification": "Deep asphalt crater creating severe tire rim hazard and sudden braking risk for two-wheelers.",
@@ -88,8 +88,8 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
     if "garbage" in name or "waste" in name or "dump" in name:
         return {
             "category": "GARBAGE_ACCUMULATION",
-            "target_department": "MCD Department of Environment Management Services (DEMS - Sanitation)",
-            "department_reasoning": "Heuristic: Solid waste accumulation on public curb falls under municipal ward sanitation (MCD DEMS).",
+            "target_department": "Ludhiana Municipal Corporation Department of Environment Management Services (DEMS - Sanitation)",
+            "department_reasoning": "Heuristic: Solid waste accumulation on public curb falls under municipal ward sanitation (Ludhiana MC DEMS).",
             "confidence": 0.88,
             "severity": 3,
             "severity_justification": "Overflowing waste heap obstructing pedestrian access and attracting stray animals.",
@@ -108,7 +108,7 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
     if "light" in name or "lamp" in name:
         return {
             "category": "STREETLIGHT",
-            "target_department": "Electricity Distribution Utility (BSES / Tata Power / MCD Electrical)",
+            "target_department": "Electricity Distribution Utility (PSPCL / Municipal Electrical Division)",
             "department_reasoning": "Heuristic: Public lighting infrastructure falls under the municipal electrical division and regional power distribution utility.",
             "confidence": 0.85,
             "severity": 3,
@@ -128,8 +128,8 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
     if "drain" in name or "sewer" in name or "manhole" in name:
         return {
             "category": "OPEN_DRAIN",
-            "target_department": "Delhi Jal Board (DJB) / Municipal Drainage Division",
-            "department_reasoning": "Heuristic: Subsurface drainage, manholes, and sewer conduits are governed by the Jal Board and Municipal Drainage engineering.",
+            "target_department": "Punjab Water Supply & Sewerage Board (PWSSB) / Municipal Drainage Division",
+            "department_reasoning": "Heuristic: Subsurface drainage, manholes, and sewer conduits are governed by the Sewerage Board and Municipal Drainage engineering.",
             "confidence": 0.90,
             "severity": 5,
             "severity_justification": "Critical life hazard: uncovered manhole or broken drainage slab presents lethal fall risk for pedestrians.",
@@ -147,7 +147,7 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
 
     return {
         "category": "UNKNOWN",
-        "target_department": "Municipal Corporation (MCD) - General Public Works Desk",
+        "target_department": "Ludhiana Municipal Corporation - General Public Works Desk",
         "department_reasoning": "General municipal jurisdiction pending manual civic inspector review.",
         "confidence": 0.50,
         "severity": 2,
@@ -194,7 +194,7 @@ def sanitize(result: dict) -> dict:
         result["bounding_boxes_to_blur"] = []
 
     result["target_department"] = str(
-        result.get("target_department") or "Municipal Corporation (MCD) - Road Maintenance"
+        result.get("target_department") or "Ludhiana Municipal Corporation - Road Maintenance"
     )
     result["department_reasoning"] = str(
         result.get("department_reasoning") or "Jurisdiction mapped based on road infrastructure classification."

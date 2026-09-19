@@ -35,7 +35,7 @@ export function TabBar() {
             style={styles.tabItem}
           >
             <View style={[styles.iconContainer, isFocused && styles.iconContainerActive]}>
-              <IconComponent size={22} color={isFocused ? COLORS.white : COLORS.lightGray} />
+              <IconComponent size={22} color={isFocused ? COLORS.onOrange : COLORS.white} />
             </View>
             <Text numberOfLines={1} style={[styles.label, isFocused && styles.labelActive]}>
               {tab.label}
@@ -75,12 +75,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    color: COLORS.lightGray,
+    color: COLORS.white,
     marginTop: 4,
     fontWeight: '500',
   },
   labelActive: {
-    color: COLORS.orange,
-    fontWeight: '600',
+    color: COLORS.amber,
+    fontWeight: '700',
   },
 });

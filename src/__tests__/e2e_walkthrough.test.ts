@@ -40,8 +40,8 @@ async function runStageDemoWalkthrough() {
 
   // 2. CITIZEN REPORTS ISSUE
   console.log("\nSTEP 2: Persona A (Citizen Rahul) reports a dangerous pothole on 80ft Road...");
-    const baseLat = 28.6500 + Math.random() * 0.1;
-  const baseLon = 77.2300 + Math.random() * 0.1;
+    const baseLat = 30.8700 + Math.random() * 0.01;
+  const baseLon = 75.8400 + Math.random() * 0.01;
   const reportLat = baseLat + 0.001;
   const reportLon = baseLon + 0.001;
   const newTicket = await api.reportTicket(

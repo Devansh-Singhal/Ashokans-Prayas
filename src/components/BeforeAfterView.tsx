@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { CAPS_LABEL, TYPOGRAPHY } from '../constants/typography';
 
 interface Props {
   beforeUrl: string;
@@ -89,14 +90,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tabText: {
-    fontSize: 11,
-    fontWeight: '600',
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#64748B',
-    letterSpacing: 0.3,
   },
   activeTabText: {
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#0F172A',
-    fontWeight: '700',
   },
   imageWrapper: {
     position: 'relative',
@@ -118,9 +119,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   pillText: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
   },
 });

@@ -1,16 +1,9 @@
 import { File as ExpoFile } from 'expo-file-system';
+import { fetch as expoFetch } from 'expo/fetch';
+import { Platform } from 'react-native';
 import { Ticket, User, VerificationResult, WardScorecard } from '../types';
 
-let PlatformOS = typeof window === 'undefined' ? 'node' : 'web';
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const RN = require('react-native');
-  if (RN && RN.Platform && RN.Platform.OS) {
-    PlatformOS = RN.Platform.OS;
-  }
-} catch {
-  // Running in pure Node.js test environment
-}
+const PlatformOS = Platform.OS ?? (typeof window === 'undefined' ? 'node' : 'web');
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -24,6 +17,19 @@ async function timedFetch(url: string, init?: RequestInit, ms: number = 20000): 
   }
 }
 
+async function postFormData(url: string, formData: FormData, ms: number = 30000): Promise<Response> {
+  if (PlatformOS === 'android' || PlatformOS === 'ios') {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await expoFetch(url, { method: 'POST', body: formData, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return timedFetch(url, { method: 'POST', body: formData }, ms);
+}
+
 async function appendPhoto(formData: FormData, fieldName: string, photoUri: string, defaultName: string, hintName?: string) {
   void hintName;
   let filename = (photoUri.split('/').pop()?.split('?')[0] || defaultName).replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -35,29 +41,14 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
 
   const isNativeFileUri = photoUri.startsWith('file://') || photoUri.startsWith('content://') || photoUri.startsWith('ph://');
 
-  // 1. Native local file (camera / gallery pick): hand a real Blob-backed File to
-  //    Expo fetch. The old `{ uri, name, type }` object throws
-  //    "Unsupported FormDataPart implementation" on SDK 57's fetch — a Blob (with a
-  //    `bytes()` reader, which ExpoFile provides) is the only non-string part it
-  //    accepts besides string/Blob.
+  // 1. Native local file (camera / gallery pick): hand the File instance itself
+  //    to Expo fetch. The old `{ uri, name, type }` object and `new Blob(...)`
+  //    wrappers both throw "Unsupported FormDataPart implementation" on
+  //    SDK 57's fetch — the expo-file-system `File` (a Blob subclass) appended
+  //    directly is the only supported file part.
   if (isNativeFileUri) {
     const file = new ExpoFile(photoUri);
-    try {
-      const bytes = await file.bytes();
-      const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
-      (blob as unknown as { name?: string }).name = filename;
-      formData.append(fieldName, blob, filename);
-      return;
-    } catch (err) {
-      console.warn('Native file read fallback', err);
-    }
-    // Fall through to the legacy object form only if the file can't be read —
-    // legacy XHR-based stacks may still accept it.
-    formData.append(fieldName, {
-      uri: photoUri,
-      name: filename,
-      type: mimeType,
-    } as any);
+    formData.append(fieldName, file as unknown as Blob, filename);
     return;
   }
 
@@ -84,8 +75,8 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
           formData.append(fieldName, blob, filename);
           return;
         }
-      } catch (e) {
-        // fallback
+      } catch {
+        // fallback to dummy jpeg below
       }
     }
     const dummyJpeg = new Uint8Array([
@@ -176,10 +167,7 @@ export class CivicFeedApi {
   async analyzeTicketPhoto(photoUri: string): Promise<any> {
     const formData = new FormData();
     await appendPhoto(formData, 'photo', photoUri, 'defect.jpg');
-    const res = await timedFetch(`${this.baseUrl}/tickets/analyze`, {
-      method: 'POST',
-      body: formData,
-    }, 45000);
+    const res = await postFormData(`${this.baseUrl}/tickets/analyze`, formData, 45000);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(typeof err.detail === 'string' ? err.detail : 'Analysis failed');
@@ -214,10 +202,7 @@ export class CivicFeedApi {
       formData.append('custom_description', customDescription);
     }
 
-    const res = await timedFetch(`${this.baseUrl}/tickets/report`, {
-      method: 'POST',
-      body: formData,
-    });
+    const res = await postFormData(`${this.baseUrl}/tickets/report`, formData);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -251,10 +236,7 @@ export class CivicFeedApi {
     formData.append('latitude', latitude.toString());
     formData.append('longitude', longitude.toString());
 
-    const res = await fetch(`${this.baseUrl}/tickets/${ticketId}/provisional-fix`, {
-      method: 'POST',
-      body: formData,
-    });
+    const res = await postFormData(`${this.baseUrl}/tickets/${ticketId}/provisional-fix`, formData);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -276,10 +258,7 @@ export class CivicFeedApi {
     formData.append('latitude', latitude.toString());
     formData.append('longitude', longitude.toString());
 
-    const res = await timedFetch(`${this.baseUrl}/tickets/${ticketId}/verify`, {
-      method: 'POST',
-      body: formData,
-    });
+    const res = await postFormData(`${this.baseUrl}/tickets/${ticketId}/verify`, formData);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

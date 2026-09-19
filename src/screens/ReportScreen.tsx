@@ -28,15 +28,16 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 const STANDARD_DEPARTMENTS = [
-  'Public Works Department (State PWD) - Arterial Road Division',
-  'Municipal Corporation (MCD) - Road Maintenance Division',
+  'Public Works Department (Punjab PWD) - Arterial Road Division',
+  'Ludhiana Municipal Corporation - Road Maintenance Division',
   'National Highways Authority of India (NHAI)',
-  'MCD Department of Environment Management Services (DEMS - Sanitation)',
-  'Delhi Jal Board (DJB) / Municipal Drainage Division',
-  'Electricity Distribution Utility (BSES / Tata Power / MCD Electrical)',
-  'MCD Civil Engineering - Footpath & Pedestrian Division',
+  'Ludhiana Municipal Corporation Department of Environment Management Services (DEMS - Sanitation)',
+  'Punjab Water Supply & Sewerage Board (PWSSB) / Municipal Drainage Division',
+  'Electricity Distribution Utility (PSPCL / Municipal Electrical Division)',
+  'Ludhiana Municipal Corporation Civil Engineering - Footpath & Pedestrian Division',
 ];
 
 const CURATED_DEMO_SAMPLES = [
@@ -52,7 +53,7 @@ const CURATED_DEMO_SAMPLES = [
   },
   {
     label: 'Damaged Sodium Streetlight',
-    url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=1000&q=80',
+    url: 'https://images.unsplash.com/photo-1543518360-68b9612a7c8c?w=1000&q=80',
     category: 'STREETLIGHT',
   },
 ];
@@ -62,10 +63,10 @@ export const ReportScreen: React.FC = () => {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoKind, setPhotoKind] = useState<'local' | 'remote' | null>(null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number }>({
-    latitude: 28.6289,
-    longitude: 77.2065,
+    latitude: 30.8785,
+    longitude: 75.8462,
   });
-  const [locationLabel, setLocationLabel] = useState<string>('Ward 14 • Connaught Place, New Delhi');
+  const [locationLabel, setLocationLabel] = useState<string>('Ward 14 • Dugri–Gill Road, Ludhiana, Punjab');
 
   // AI Pre-Analysis States
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -107,7 +108,7 @@ export const ReportScreen: React.FC = () => {
           );
         }
       } catch {
-        setLocationLabel('Demo location: Ward 14 • Connaught Place, New Delhi');
+        setLocationLabel('Demo location: Ward 14 • Dugri–Gill Road, Ludhiana, Punjab');
       }
     })();
   }, []);
@@ -273,14 +274,16 @@ export const ReportScreen: React.FC = () => {
             <Sparkles size={13} color="#38BDF8" />
             <Text style={styles.aiTagText}>
               {isAnalyzing
-                ? 'DeepSeek Vision analyzing image…'
-                : 'DeepSeek Vision classification complete'}
+                ? 'DeepSeek vision analyzing image'
+                : 'DeepSeek vision classification complete'}
             </Text>
           </View>
           <TouchableOpacity
             style={styles.retakeBtn}
             onPress={handleReset}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Retake or clear photo"
           >
             <RotateCcw size={14} color="#0F172A" />
             <Text style={styles.retakeText}>Retake / Clear</Text>
@@ -293,6 +296,9 @@ export const ReportScreen: React.FC = () => {
               style={styles.primaryCaptureBtn}
               onPress={handleLaunchCamera}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Take live photo"
+              accessibilityHint="Opens the camera to capture civic evidence"
             >
               <Camera size={26} color="#FFFFFF" />
               <Text style={styles.primaryBtnText}>Take Live Photo</Text>
@@ -303,6 +309,9 @@ export const ReportScreen: React.FC = () => {
               style={styles.secondaryCaptureBtn}
               onPress={handleLaunchGallery}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Choose from gallery"
+              accessibilityHint="Opens the photo library to select civic evidence"
             >
               <ImageIcon size={26} color="#0F172A" />
               <Text style={styles.secondaryBtnText}>Choose from Gallery</Text>
@@ -341,7 +350,7 @@ export const ReportScreen: React.FC = () => {
       {isAnalyzing && (
         <View style={styles.analyzingCard}>
           <ActivityIndicator color="#0284C7" size="small" />
-          <Text style={styles.analyzingTitle}>DeepSeek 4.1 Vision Analyzing Defect...</Text>
+          <Text style={styles.analyzingTitle}>Analyzing defect with DeepSeek vision</Text>
           <Text style={styles.analyzingSub}>
             Triaging municipal department, calculating severity, and verifying road jurisdiction.
           </Text>
@@ -389,10 +398,13 @@ export const ReportScreen: React.FC = () => {
               style={styles.overrideToggle}
               onPress={() => setShowDepartmentPicker(!showDepartmentPicker)}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={showDepartmentPicker ? 'Close department options' : 'Change department'}
+              accessibilityState={{ expanded: showDepartmentPicker }}
             >
               <Edit3 size={13} color="#0284C7" />
               <Text style={styles.overrideToggleText}>
-                {showDepartmentPicker ? 'Close Department Options' : 'Change Department / Wrong Authority?'}
+                {showDepartmentPicker ? 'Close Department Options' : 'Change department (wrong authority?)'}
               </Text>
               <ChevronDown size={14} color="#0284C7" />
             </TouchableOpacity>
@@ -410,6 +422,9 @@ export const ReportScreen: React.FC = () => {
                         setSelectedDepartment(dept);
                         setShowDepartmentPicker(false);
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel={dept}
+                      accessibilityState={{ selected: isSelected }}
                     >
                       <Text style={[styles.deptChipText, isSelected && styles.deptChipTextSelected]}>
                         {dept}
@@ -423,22 +438,26 @@ export const ReportScreen: React.FC = () => {
 
           {/* Editable Post Content */}
           <View style={styles.editableSection}>
-            <Text style={styles.editSectionLabel}>Ticket Title</Text>
+            <Text style={styles.editSectionLabel} nativeID="ticketTitleLabel">Ticket title</Text>
             <TextInput
               style={styles.textInput}
               value={customTitle}
               onChangeText={setCustomTitle}
               placeholder="Concise defect title"
               placeholderTextColor="#94A3B8"
+              accessibilityLabel="Ticket title"
+              accessibilityLabelledBy="ticketTitleLabel"
             />
 
-            <Text style={[styles.editSectionLabel, { marginTop: 10 }]}>Description & Field Notes</Text>
+            <Text style={[styles.editSectionLabel, { marginTop: 10 }]} nativeID="ticketDescLabel">Description and field notes</Text>
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={customDescription}
               onChangeText={setCustomDescription}
               placeholder="Actionable notes for municipal inspection crew"
               placeholderTextColor="#94A3B8"
+              accessibilityLabel="Description and field notes"
+              accessibilityLabelledBy="ticketDescLabel"
               multiline
               numberOfLines={3}
             />
@@ -456,19 +475,22 @@ export const ReportScreen: React.FC = () => {
 
           {/* Confirm & Publish Button */}
           <TouchableOpacity
-            style={[styles.confirmPublishBtn, isPublishing && styles.submitBtnDisabled]}
+            style={[styles.confirmPublishBtn, isPublishing && { opacity: 0.6 }]}
             onPress={handleConfirmAndPublish}
             disabled={isPublishing}
             activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Confirm authority and publish report"
+            accessibilityState={{ disabled: isPublishing, busy: isPublishing }}
           >
             {isPublishing ? (
               <View style={styles.loadingRow}>
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color="#0B1B2F" size="small" />
                 <Text style={styles.submitBtnText}>Publishing to Ward 14 Feed…</Text>
               </View>
             ) : (
               <Text style={styles.submitBtnText}>
-                Confirm Authority & Publish (+50 Escrow Pts)
+                Confirm authority and publish (+50 escrow pts)
               </Text>
             )}
           </TouchableOpacity>
@@ -493,7 +515,7 @@ export const ReportScreen: React.FC = () => {
       <View style={styles.infoCard}>
         <Text style={styles.infoCardTitle}>Civic Audit & Routing Standard</Text>
         <Text style={styles.infoCardText}>
-          DeepSeek 4.1 Vision maps defects across MCD, State PWD, NHAI, DJB, and Discom jurisdictions. Your confirmation prevents inter-departmental blame games and ensures prompt field resolution.
+          DeepSeek 4.1 Vision maps defects across Ludhiana Municipal Corporation, Punjab PWD, NHAI, PWSSB, and PSPCL jurisdictions. Your confirmation prevents inter-departmental blame games and ensures prompt field resolution.
         </Text>
       </View>
     </ScrollView>
@@ -513,15 +535,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
+    ...TYPOGRAPHY.h1,
     color: '#0F172A',
-    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 13,
+    ...TYPOGRAPHY.body,
     color: '#64748B',
-    lineHeight: 18,
     marginTop: 4,
   },
   locationBar: {
@@ -537,8 +556,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   locationText: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...TYPOGRAPHY.bodySmStrong,
+    ...NUMERIC,
     color: '#0369A1',
     flex: 1,
   },
@@ -565,15 +584,15 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
   primaryBtnText: {
+    ...TYPOGRAPHY.bodyStrong,
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
     marginTop: 8,
     textAlign: 'center',
   },
   primaryBtnSub: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#94A3B8',
-    fontSize: 10,
     marginTop: 2,
   },
   secondaryCaptureBtn: {
@@ -589,15 +608,15 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
   secondaryBtnText: {
+    ...TYPOGRAPHY.bodyStrong,
     color: '#0F172A',
-    fontSize: 13,
-    fontWeight: '700',
     marginTop: 8,
     textAlign: 'center',
   },
   secondaryBtnSub: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#64748B',
-    fontSize: 10,
     marginTop: 2,
   },
   sampleSection: {
@@ -607,11 +626,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#F1F5F9',
   },
   sampleHeader: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: 8,
   },
   sampleChipsRow: {
@@ -626,11 +643,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   sampleChipText: {
-    fontSize: 11,
+    ...TYPOGRAPHY.captionStrong,
     color: '#334155',
-    fontWeight: '600',
   },
   previewCard: {
     backgroundColor: '#FFFFFF',
@@ -659,9 +677,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   aiTagText: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#F8FAFC',
-    fontSize: 11,
-    fontWeight: '600',
   },
   retakeBtn: {
     position: 'absolute',
@@ -680,8 +697,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   retakeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
     color: '#0F172A',
   },
   analyzingCard: {
@@ -694,13 +710,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   analyzingTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...TYPOGRAPHY.bodyStrong,
     color: '#0369A1',
     marginTop: 8,
   },
   analyzingSub: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#0284C7',
     textAlign: 'center',
     marginTop: 4,
@@ -730,10 +745,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   badgeText: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.4,
   },
   waterBadge: {
     backgroundColor: '#EFF6FF',
@@ -744,9 +758,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   waterText: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#1D4ED8',
-    fontSize: 10,
-    fontWeight: '700',
   },
   departmentBox: {
     backgroundColor: '#F8FAFC',
@@ -763,21 +777,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   deptLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#64748B',
-    textTransform: 'uppercase',
   },
   deptValue: {
-    fontSize: 14,
-    fontWeight: '800',
+    ...TYPOGRAPHY.subtitle,
+    ...NUMERIC,
     color: '#0F172A',
     marginTop: 2,
   },
   reasoningCallout: {
     backgroundColor: '#F0FDFA',
-    borderLeftWidth: 3,
-    borderLeftColor: '#0D9488',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
     padding: 10,
     borderRadius: 6,
     marginTop: 10,
@@ -789,15 +802,13 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   reasoningTitle: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#0D9488',
-    textTransform: 'uppercase',
   },
   reasoningBody: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#334155',
-    lineHeight: 16,
   },
   overrideToggle: {
     flexDirection: 'row',
@@ -809,8 +820,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#E2E8F0',
   },
   overrideToggleText: {
-    fontSize: 11,
-    fontWeight: '600',
+    ...TYPOGRAPHY.captionStrong,
     color: '#0284C7',
     flex: 1,
   },
@@ -825,26 +835,26 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   deptChipSelected: {
     backgroundColor: '#0F172A',
     borderColor: '#0F172A',
   },
   deptChipText: {
-    fontSize: 11,
+    ...TYPOGRAPHY.captionStrong,
     color: '#334155',
-    fontWeight: '600',
   },
   deptChipTextSelected: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#FFFFFF',
-    fontWeight: '700',
   },
   editableSection: {
     marginBottom: 14,
   },
   editSectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
     color: '#475569',
     marginBottom: 4,
   },
@@ -855,7 +865,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    fontSize: 12,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '400',
     color: '#0F172A',
   },
   textArea: {
@@ -874,10 +886,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   spoofText: {
-    fontSize: 10.5,
+    ...TYPOGRAPHY.caption,
     color: '#92400E',
     flex: 1,
-    lineHeight: 15,
   },
   confirmPublishBtn: {
     backgroundColor: '#0D9488',
@@ -885,14 +896,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  submitBtnDisabled: {
-    opacity: 0.6,
+    minHeight: 48,
   },
   submitBtnText: {
+    ...TYPOGRAPHY.bodyStrong,
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
   },
   loadingRow: {
     flexDirection: 'row',
@@ -911,9 +919,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#DC2626',
-    fontSize: 12,
-    fontWeight: '600',
     flex: 1,
   },
   successBox: {
@@ -928,15 +935,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   successTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...TYPOGRAPHY.bodyStrong,
     color: '#065F46',
   },
   successSub: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#047857',
     marginTop: 2,
-    lineHeight: 16,
   },
   infoCard: {
     backgroundColor: '#FFFFFF',
@@ -946,16 +951,13 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   infoCardTitle: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
     marginBottom: 4,
   },
   infoCardText: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#64748B',
-    lineHeight: 16,
   },
 });

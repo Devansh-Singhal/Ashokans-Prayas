@@ -38,7 +38,7 @@ async def seed():
         
         await session.flush()
 
-        # 2. Seed 6 Ward 14 (Delhi) tickets + 5 Ludhiana Dugri/Gill corridor
+        # 2. Seed 6 Ward 14 (Ludhiana, Punjab) tickets + 5 Ludhiana Dugri/Gill corridor
         # case-study tickets. Corridor coords sit on/near Dugri Road per
         # OpenStreetMap (Nominatim): ~(30.8686, 75.8435) -> (30.8893, 75.8490).
         now = datetime.now(timezone.utc)
@@ -51,8 +51,8 @@ async def seed():
                 "category": "POTHOLE",
                 "severity": 4,
                 "status": TicketStatus.REPORTED.value,
-                "latitude": 28.6289,
-                "longitude": 77.2065,
+                "latitude": 30.8785,
+                "longitude": 75.8462,
                 "upvotes_count": 34,
                 # Deep asphalt road fracture on high-traffic urban corridor
                 "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",
@@ -65,8 +65,8 @@ async def seed():
                 "category": "GARBAGE_ACCUMULATION",
                 "severity": 3,
                 "status": TicketStatus.PROVISIONAL_FIX.value,
-                "latitude": 28.6290,
-                "longitude": 77.2066,
+                "latitude": 30.8786,
+                "longitude": 75.8463,
                 "upvotes_count": 18,
                 # Municipal street waste heap before, and freshly swept curb after
                 "report_photo_url": "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=1200&q=80",
@@ -80,11 +80,11 @@ async def seed():
                 "category": "STREETLIGHT",
                 "severity": 2,
                 "status": TicketStatus.REPORTED.value,
-                "latitude": 28.6275,
-                "longitude": 77.2050,
+                "latitude": 30.8771,
+                "longitude": 75.8447,
                 "upvotes_count": 12,
                 # Defunct municipal street light fixture
-                "report_photo_url": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=1200&q=80",
+                "report_photo_url": "https://images.unsplash.com/photo-1543518360-68b9612a7c8c?w=1200&q=80",
                 "created_at": now - timedelta(hours=14)
             },
             {
@@ -94,8 +94,8 @@ async def seed():
                 "category": "POTHOLE",
                 "severity": 4,
                 "status": TicketStatus.WEATHER_OCCLUDED.value,
-                "latitude": 28.6310,
-                "longitude": 77.2085,
+                "latitude": 30.8806,
+                "longitude": 75.8482,
                 "upvotes_count": 27,
                 # Waterlogged asphalt road completely submerged during monsoon
                 "report_photo_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&q=80",
@@ -108,8 +108,8 @@ async def seed():
                 "category": "OPEN_DRAIN",
                 "severity": 5,
                 "status": TicketStatus.REPORTED.value,
-                "latitude": 28.6268,
-                "longitude": 77.2040,
+                "latitude": 30.8764,
+                "longitude": 75.8437,
                 "upvotes_count": 48,
                 # Uncovered roadside concrete drainage slab ditch
                 "report_photo_url": "https://images.unsplash.com/photo-1584467735815-f778f274e296?w=1200&q=80",
@@ -122,8 +122,8 @@ async def seed():
                 "category": "POTHOLE",
                 "severity": 3,
                 "status": TicketStatus.RESOLVED.value,
-                "latitude": 28.6280,
-                "longitude": 77.2060,
+                "latitude": 30.8776,
+                "longitude": 75.8457,
                 "upvotes_count": 56,
                 # Pothole before, and rolled asphalt patch after
                 "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",

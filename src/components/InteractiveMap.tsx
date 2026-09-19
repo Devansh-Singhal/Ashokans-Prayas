@@ -29,13 +29,13 @@ export function InteractiveMap({
   tickets,
   selectedTicket,
   onSelectTicket,
-  userCoords = { latitude: 28.6289, longitude: 77.2065 },
+  userCoords = { latitude: 30.8785, longitude: 75.8462 },
   area,
 }: Props) {
   const fallbackCenter = area?.center ?? userCoords;
   const fallbackZoom = area?.zoom ?? 15;
-  const pillLabel = area?.pillLabel ?? 'WARD 14 • CENTRAL DELHI GEOSPATIAL RADAR';
-  const userPopupPlace = area?.userPopupPlace ?? 'Ward 14, Delhi';
+  const pillLabel = area?.pillLabel ?? 'WARD 14 • LUDHIANA GEOSPATIAL RADAR';
+  const userPopupPlace = area?.userPopupPlace ?? 'Ward 14, Ludhiana, Punjab';
   const iframeTitle = area?.iframeTitle ?? 'CivicFeed Ward 14 Map';
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 

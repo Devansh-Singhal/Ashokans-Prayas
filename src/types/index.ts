@@ -66,6 +66,15 @@ export interface WardScorecard {
   recent_trend?: 'improving' | 'stable' | 'declining';
 }
 
+export type ContributionKind = 'REPORT' | 'FIX' | 'VERIFICATION';
+
+export interface Contribution {
+  id: string;
+  kind: ContributionKind;
+  category: TicketCategory;
+  at: string;
+}
+
 export interface DemoPersona {
   id: string;
   name: string;

@@ -1,22 +1,36 @@
-// Design colors from Figma
+// CivicFeed palette — Navy / Orange / Amber / Warm white / Mist / Verified green
 export const COLORS = {
-  // Dark backgrounds
-  headerDark: '#121212',
-  contentDark: '#1E1E1E',
-  navDark: '#0D0D0D',
+  // Brand
+  navy: '#0B1B2F',
+  navyDeep: '#071222',
+  orange: '#FF7A00',
+  amber: '#FFC21A',
+  warmWhite: '#FAF7F2',
+  mist: '#E6EAF0',
+  verified: '#1E9E6A',
 
-  // Accent colors
-  orange: '#EE8143',
-  purple: '#9747FF',
-
-  // Text and icons
+  // Text
   white: '#FFFFFF',
-  lightGray: '#929292',
-  darkGray: '#929292',
+  ink: '#0B1B2F',
+  inkSoft: '#3D4E65',
+  muted: '#6B7A90',
+  lightGray: '#6B7A90',
+  darkGray: '#6B7A90',
 
-  // System colors
-  background: '#0D0D0D',
-  surface: '#1E1E1E',
-  text: '#FFFFFF',
-  textSecondary: '#929292',
+  // Dark chrome (navy family)
+  headerDark: '#0B1B2F',
+  contentDark: '#13273F',
+  navDark: '#0B1B2F',
+
+  // System roles
+  background: '#FAF7F2',
+  surface: '#FFFFFF',
+  text: '#0B1B2F',
+  textSecondary: '#3D4E65',
+
+  // Button text on orange must be navy (6.7:1 passes; white on orange fails)
+  onOrange: '#0B1B2F',
+
+  // Legacy alias (was Figma orange)
+  purple: '#FF7A00',
 };
