@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Modal,
   View,
@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import {
   Award,
-  CheckCircle2,
   Download,
   Share2,
   ShieldCheck,
@@ -19,9 +18,10 @@ import {
   QrCode,
   Building2,
   ExternalLink,
-  Copy,
 } from 'lucide-react-native';
 import { CertificateData } from '../types';
+import { COLORS } from '../constants/colors';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 interface Props {
   visible: boolean;
@@ -30,13 +30,11 @@ interface Props {
 }
 
 export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate, onClose }) => {
-  const [copied, setCopied] = useState(false);
-
   if (!certificate) return null;
 
   const serialId = certificate.certificate_id?.replace('PRAYAS-DEL-', 'PRAYAS-PB-LDH-') || certificate.certificate_id;
-  const verifiedTasksCount = certificate.summary.total_verified_tasks || certificate.summary.total_tasks_completed;
-  const citizensCount = certificate.summary.citizens_safeguarded || verifiedTasksCount * 850;
+  const verifiedTasksCount = certificate.summary.total_verified_tasks ?? certificate.summary.total_tasks_completed;
+  const citizensCount = certificate.summary.citizens_safeguarded ?? verifiedTasksCount * 850;
 
   const handleShare = async () => {
     try {
@@ -49,9 +47,15 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
     }
   };
 
-  const handleCopyLink = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  const handleShareLink = async () => {
+    try {
+      await Share.share({
+        title: 'CivicFeed Certificate Verification',
+        message: certificate.verification_url,
+      });
+    } catch (err) {
+      console.log('Share error', err);
+    }
   };
 
   return (
@@ -177,26 +181,17 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
               onPress={handleShare}
               activeOpacity={0.8}
             >
-              <Share2 size={18} color="#FFFFFF" />
+              <Share2 size={18} color={COLORS.onOrange} />
               <Text style={styles.shareBtnText}>Share Credential</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.copyBtn}
-              onPress={handleCopyLink}
+              onPress={handleShareLink}
               activeOpacity={0.8}
             >
-              {copied ? (
-                <>
-                  <CheckCircle2 size={18} color="#15803D" />
-                  <Text style={[styles.copyBtnText, { color: '#15803D' }]}>Link Copied!</Text>
-                </>
-              ) : (
-                <>
-                  <Copy size={18} color="#1E293B" />
-                  <Text style={styles.copyBtnText}>Copy Verify Link</Text>
-                </>
-              )}
+              <Share2 size={18} color={COLORS.navy} />
+              <Text style={styles.copyBtnText}>Share Verify Link</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -214,12 +209,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalCard: {
-    backgroundColor: '#0F172A',
+    backgroundColor: COLORS.navy,
     borderRadius: 24,
     width: '100%',
     maxHeight: '92%',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: COLORS.navyDeep,
     overflow: 'hidden',
   },
   topBar: {
@@ -228,9 +223,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#1E293B',
+    backgroundColor: COLORS.navyDeep,
     borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    borderBottomColor: COLORS.contentDark,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -238,15 +233,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   topBadgeText: {
-    color: '#F59E0B',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
+    color: COLORS.amber,
   },
   closeBtn: {
     padding: 6,
     borderRadius: 16,
-    backgroundColor: '#334155',
+    backgroundColor: COLORS.contentDark,
   },
   scrollArea: {
     maxHeight: 560,
@@ -293,19 +287,17 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   certHeading: {
+    ...TYPOGRAPHY.h2,
     color: '#1E293B',
-    fontSize: 18,
-    fontWeight: '900',
     textAlign: 'center',
     marginTop: 8,
     letterSpacing: 0.5,
   },
   certSubheading: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#64748B',
-    fontSize: 11,
-    fontWeight: '800',
     textAlign: 'center',
-    letterSpacing: 1,
     marginTop: 2,
     marginBottom: 14,
   },
@@ -327,8 +319,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   recipientName: {
-    fontSize: 20,
-    fontWeight: '900',
+    ...TYPOGRAPHY.h1,
     color: '#78350F',
     textAlign: 'center',
   },
@@ -371,14 +362,13 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   metricVal: {
-    fontSize: 16,
-    fontWeight: '900',
+    ...TYPOGRAPHY.stat,
+    ...NUMERIC,
     color: '#0F172A',
   },
   metricLbl: {
-    fontSize: 9,
+    ...TYPOGRAPHY.micro,
     color: '#64748B',
-    fontWeight: '700',
     textAlign: 'center',
     marginTop: 2,
   },
@@ -391,10 +381,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tableTitle: {
-    fontSize: 10,
-    fontWeight: '800',
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#64748B',
-    letterSpacing: 0.8,
     marginBottom: 8,
   },
   tableRow: {
@@ -406,8 +395,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F1F5F9',
   },
   domTitle: {
-    fontSize: 12,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodyStrong,
     color: '#0F172A',
   },
   domJurisdiction: {
@@ -514,9 +502,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     gap: 12,
-    backgroundColor: '#1E293B',
+    backgroundColor: COLORS.navyDeep,
     borderTopWidth: 1,
-    borderTopColor: '#334155',
+    borderTopColor: COLORS.contentDark,
   },
   shareBtn: {
     flex: 1,
@@ -524,14 +512,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#EA580C',
+    backgroundColor: COLORS.orange,
     paddingVertical: 14,
     borderRadius: 14,
   },
   shareBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.onOrange,
   },
   copyBtn: {
     flex: 1,
@@ -539,13 +526,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     paddingVertical: 14,
     borderRadius: 14,
   },
   copyBtnText: {
-    color: '#0F172A',
-    fontSize: 14,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.navy,
   },
 });

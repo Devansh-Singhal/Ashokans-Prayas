@@ -80,6 +80,7 @@ export interface CivicTask {
   ward_id: string;
   status: string;
   earned_hours?: number;
+  is_simulated?: boolean;
   timestamp: string;
 }
 

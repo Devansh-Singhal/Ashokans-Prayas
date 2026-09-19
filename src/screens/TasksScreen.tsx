@@ -77,8 +77,8 @@ export const TasksScreen: React.FC = () => {
   };
 
   const totalTasks = tasksData?.total_unique_tasks || 0;
-  const verifiedTasks = tasksData?.total_verified_tasks || totalTasks;
-  const citizensSafeguarded = tasksData?.citizens_safeguarded || (totalTasks * 850);
+  const verifiedTasks = tasksData?.total_verified_tasks ?? totalTasks;
+  const citizensSafeguarded = tasksData?.citizens_safeguarded ?? (totalTasks * 850);
   const impactPoints = currentUser?.points_balance ?? currentPersona?.points ?? (totalTasks * 120);
   const impactScore = `${impactPoints} pts`;
 

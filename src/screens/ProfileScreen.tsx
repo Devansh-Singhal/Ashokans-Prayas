@@ -1,11 +1,95 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, Award, FileText } from 'lucide-react-native';
+import { api } from '../services/api';
+import { CertificateData, Contribution, UserTasksResponse } from '../types';
+import { groupContributions, certificateEligibility } from '../utils/contributions';
+import { COLORS } from '../constants/colors';
+import { OfficialCertificateModal } from '../components/OfficialCertificateModal';
+import { ShieldCheck, Award, FileText, CheckCircle2, Download, Eye } from 'lucide-react-native';
 import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
+type ProfileTab = 'overview' | 'certificate';
+
 export const ProfileScreen: React.FC = () => {
-  const { currentUser, currentPersona } = useAuth();
+  const { currentUser, currentPersona, contributions } = useAuth();
+  const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
+  const [serverReports, setServerReports] = useState<Contribution[]>([]);
+  const [serverTasks, setServerTasks] = useState<UserTasksResponse | null>(null);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [tasksError, setTasksError] = useState<string | null>(null);
+  const [certificate, setCertificate] = useState<CertificateData | null>(null);
+  const [certModalVisible, setCertModalVisible] = useState(false);
+  const [generatingCert, setGeneratingCert] = useState(false);
+
+  // Seed the certificate with server-truth reports filed by this user, merged
+  // with whatever this session has already logged locally.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const feed = await api.getWardFeed('WARD_LUDHIANA_14', 1, 100);
+        const mine: Contribution[] = feed.tickets
+          .filter((ticket) => ticket.reporter_id === currentUser.id)
+          .map((ticket) => ({
+            id: ticket.id,
+            kind: 'REPORT',
+            category: ticket.category,
+            at: ticket.created_at,
+          }));
+        if (!cancelled) setServerReports(mine);
+      } catch {
+        // Offline/demo fallback — the certificate still works off in-session contributions.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser.id]);
+
+  // Certificate backend as the primary source; the ward-feed seed below is the
+  // offline fallback when the backend is unreachable.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setTasksLoading(true);
+      setTasksError(null);
+      try {
+        const data = await api.getUserTasks(currentUser.id);
+        if (!cancelled) setServerTasks(data);
+      } catch (err: any) {
+        if (!cancelled) {
+          setServerTasks(null);
+          setTasksError(err?.message || 'Certificate service unavailable');
+        }
+      } finally {
+        if (!cancelled) setTasksLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser.id]);
+
+  const handleViewCertificate = async () => {
+    setGeneratingCert(true);
+    try {
+      const cert = await api.generateCertificate(currentUser.id);
+      setCertificate(cert);
+      setCertModalVisible(true);
+    } catch {
+      // Offline/demo: leave the modal closed; the fallback groups still render.
+    } finally {
+      setGeneratingCert(false);
+    }
+  };
+
+  const allContributions = [...serverReports, ...contributions];
+  const groups = groupContributions(allContributions);
+  const totalContributions = groups.reduce((sum, g) => sum + g.count, 0);
+  const eligibility = certificateEligibility(allContributions, currentUser);
+  const backendLive = serverTasks !== null;
+  const displayTotal = serverTasks?.total_unique_tasks ?? totalContributions;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -19,17 +103,17 @@ export const ProfileScreen: React.FC = () => {
         <View
           style={[
             styles.verifiedTag,
-            currentUser.consent_status !== 'ACTIVE' && { backgroundColor: '#FEF3C7' },
+            currentUser.consent_status !== 'ACTIVE' && styles.verifiedTagPending,
           ]}
         >
           <ShieldCheck
             size={14}
-            color={currentUser.consent_status === 'ACTIVE' ? '#16A34A' : '#D97706'}
+            color={currentUser.consent_status === 'ACTIVE' ? COLORS.verified : '#D97706'}
           />
           <Text
             style={[
               styles.verifiedText,
-              currentUser.consent_status !== 'ACTIVE' && { color: '#92400E' },
+              currentUser.consent_status !== 'ACTIVE' && styles.verifiedTextPending,
             ]}
           >
             {currentUser.consent_status === 'ACTIVE'
@@ -39,27 +123,195 @@ export const ProfileScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Points Card */}
-      <View style={styles.statCard}>
-        <View style={styles.statRow}>
-          <View>
-            <Text style={styles.statLabel}>Total Points Balance</Text>
-            <Text style={styles.statValue}>{currentUser.points_balance} pts</Text>
-          </View>
-          <Award size={32} color="#F59E0B" />
-        </View>
+      {/* Overview / Certificate segmented control */}
+      <View style={styles.segmentedControl}>
+        <TouchableOpacity
+          style={[styles.segment, activeTab === 'overview' && styles.segmentActive]}
+          onPress={() => setActiveTab('overview')}
+          activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'overview' }}
+          accessibilityLabel="Overview"
+        >
+          <Text style={[styles.segmentText, activeTab === 'overview' && styles.segmentTextActive]}>
+            Overview
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, activeTab === 'certificate' && styles.segmentActive]}
+          onPress={() => setActiveTab('certificate')}
+          activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'certificate' }}
+          accessibilityLabel="Certificate"
+        >
+          <Text style={[styles.segmentText, activeTab === 'certificate' && styles.segmentTextActive]}>
+            Certificate
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Academic Credential Note */}
-      <View style={styles.certCard}>
-        <FileText size={20} color="#2563EB" />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.certTitle}>Open-Data Infrastructure Credential</Text>
-          <Text style={styles.certText}>
-            Points are verified civic contributions synced from the server ward ledger. Exportable service summary coming soon.
-          </Text>
-        </View>
-      </View>
+      {activeTab === 'overview' ? (
+        <>
+          {/* Points Card */}
+          <View style={styles.statCard}>
+            <View style={styles.statRow}>
+              <View>
+                <Text style={styles.statLabel}>Total Points Balance</Text>
+                <Text style={styles.statValue}>{currentUser.points_balance} pts</Text>
+              </View>
+              <Award size={32} color={COLORS.amber} />
+            </View>
+          </View>
+
+          {/* Academic Credential Note */}
+          <View style={styles.certCard}>
+            <FileText size={20} color={COLORS.amber} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.certTitle}>Open-Data Infrastructure Credential</Text>
+              <Text style={styles.certText}>
+                Points are verified civic contributions synced from the server ward ledger. Exportable service summary coming soon.
+              </Text>
+            </View>
+          </View>
+        </>
+      ) : (
+        <>
+          {/* Certificate holder */}
+          <View style={styles.statCard}>
+            <Text style={styles.certificateHolderLabel}>Certificate Holder</Text>
+            <Text style={styles.certificateHolderName}>{currentUser.public_handle}</Text>
+            <Text style={styles.certificateHolderMeta}>
+              {currentPersona.role} • Ward 14, Ludhiana, Punjab
+            </Text>
+
+            <View style={styles.progressDivider} />
+
+            <View style={styles.certificateStatsRow}>
+              <View style={styles.certificateStat}>
+                <Text style={styles.statValue}>{displayTotal}</Text>
+                <Text style={styles.statLabel}>Contributions</Text>
+              </View>
+              <View style={styles.certificateStat}>
+                <Text style={styles.statValue}>{currentUser.points_balance}</Text>
+                <Text style={styles.statLabel}>Points</Text>
+              </View>
+            </View>
+            {!backendLive && !tasksLoading && (
+              <Text style={styles.offlineNote}>
+                Offline — showing contributions from this session{tasksError ? ` (${tasksError})` : ''}.
+              </Text>
+            )}
+          </View>
+
+          {/* Grouped contributions — server domains when live, local fallback otherwise */}
+          {tasksLoading ? (
+            <View style={styles.statCard}>
+              <ActivityIndicator size="small" color={COLORS.navy} />
+              <Text style={styles.emptyGroupsText}>Loading verified contributions…</Text>
+            </View>
+          ) : backendLive ? (
+            <View style={styles.statCard}>
+              <Text style={styles.groupsTitle}>Civic Contributions by Category</Text>
+              {serverTasks!.grouped_domains.length === 0 ? (
+                <Text style={styles.emptyGroupsText}>
+                  No verified contributions yet. File a report or complete an audit to start building your certificate.
+                </Text>
+              ) : (
+                serverTasks!.grouped_domains.map((d) => (
+                  <View key={d.domain_id} style={styles.groupRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.groupName}>{d.title}</Text>
+                      <Text style={styles.groupJurisdiction}>{d.jurisdiction}</Text>
+                      {d.tasks.some((t) => t.is_simulated) && (
+                        <Text style={styles.demoBadge}>Demo data</Text>
+                      )}
+                    </View>
+                    <View style={styles.groupCountPill}>
+                      <Text style={styles.groupCountText}>{d.task_count}</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          ) : (
+          <View style={styles.statCard}>
+            <Text style={styles.groupsTitle}>Civic Contributions by Category</Text>
+            {groups.length === 0 ? (
+              <Text style={styles.emptyGroupsText}>
+                No verified contributions yet. File a report or complete an audit to start building your certificate.
+              </Text>
+            ) : (
+              groups.map((g) => (
+                <View key={g.group} style={styles.groupRow}>
+                  <Text style={styles.groupName}>{g.group}</Text>
+                  <View style={styles.groupCountPill}>
+                    <Text style={styles.groupCountText}>{g.count}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+          )}
+
+          {/* Eligibility banner */}
+          <View
+            style={[
+              styles.eligibilityBanner,
+              eligibility.eligible ? styles.eligibilityBannerActive : styles.eligibilityBannerPending,
+            ]}
+          >
+            <CheckCircle2 size={18} color={eligibility.eligible ? COLORS.verified : '#92400E'} />
+            <Text
+              style={[
+                styles.eligibilityText,
+                eligibility.eligible ? styles.eligibilityTextActive : styles.eligibilityTextPending,
+              ]}
+            >
+              {eligibility.reason}
+            </Text>
+          </View>
+
+          {/* View Certificate — opens the official modal via the backend */}
+          <TouchableOpacity
+            style={[styles.downloadButton, styles.viewButton]}
+            onPress={handleViewCertificate}
+            disabled={generatingCert}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="View Certificate"
+            accessibilityState={{ disabled: generatingCert }}
+          >
+            {generatingCert ? (
+              <ActivityIndicator size="small" color={COLORS.onOrange} />
+            ) : (
+              <Eye size={18} color={COLORS.onOrange} />
+            )}
+            <Text style={styles.viewButtonText}>
+              {generatingCert ? 'Generating…' : 'View Certificate'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Legacy offline placeholder */}
+          <TouchableOpacity
+            style={styles.downloadButton}
+            disabled
+            activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel="Download Certificate"
+            accessibilityState={{ disabled: true }}
+          >
+            <Download size={18} color={COLORS.muted} />
+            <Text style={styles.downloadButtonText}>Download Certificate</Text>
+          </TouchableOpacity>
+          <Text style={styles.downloadCaption}>Coming soon</Text>
+        </>
+      )}
+      <OfficialCertificateModal
+        visible={certModalVisible}
+        certificate={certificate}
+        onClose={() => setCertModalVisible(false)}
+      />
     </ScrollView>
   );
 };
@@ -67,7 +319,7 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.background,
   },
   content: {
     padding: 20,
@@ -75,12 +327,12 @@ const styles = StyleSheet.create({
   },
   profileHero: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     padding: 24,
     borderRadius: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: COLORS.mist,
   },
   avatarBig: {
     width: 64,
@@ -92,16 +344,16 @@ const styles = StyleSheet.create({
   },
   avatarBigLetter: {
     ...TYPOGRAPHY.h3,
-    color: '#FFFFFF',
+    color: COLORS.white,
   },
   handle: {
     ...TYPOGRAPHY.h4,
     ...NUMERIC,
-    color: '#0F172A',
+    color: COLORS.text,
   },
   role: {
     ...TYPOGRAPHY.bodySm,
-    color: '#64748B',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   verifiedTag: {
@@ -114,17 +366,48 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 8,
   },
+  verifiedTagPending: {
+    backgroundColor: '#FEF3C7',
+  },
   verifiedText: {
     ...TYPOGRAPHY.micro,
     ...CAPS_LABEL,
     color: '#15803D',
   },
+  verifiedTextPending: {
+    color: '#92400E',
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.mist,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 8,
+    minHeight: 44,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentActive: {
+    backgroundColor: COLORS.surface,
+  },
+  segmentText: {
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.textSecondary,
+  },
+  segmentTextActive: {
+    color: COLORS.text,
+  },
   statCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     padding: 20,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: COLORS.mist,
     marginBottom: 16,
   },
   statRow: {
@@ -134,30 +417,166 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     ...TYPOGRAPHY.bodySm,
-    color: '#64748B',
+    color: COLORS.textSecondary,
   },
   statValue: {
     ...TYPOGRAPHY.stat,
     ...NUMERIC,
-    color: '#0F172A',
+    color: COLORS.text,
     marginTop: 2,
+  },
+  progressDivider: {
+    height: 1,
+    backgroundColor: COLORS.mist,
+    marginVertical: 14,
   },
   certCard: {
     flexDirection: 'row',
     gap: 12,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: COLORS.navy,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: COLORS.navyDeep,
     padding: 16,
     borderRadius: 16,
   },
   certTitle: {
     ...TYPOGRAPHY.bodyStrong,
-    color: '#1E40AF',
+    color: COLORS.white,
     marginBottom: 2,
   },
   certText: {
     ...TYPOGRAPHY.caption,
-    color: '#1D4ED8',
+    color: COLORS.mist,
+  },
+  certificateHolderLabel: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
+    color: COLORS.muted,
+  },
+  certificateHolderName: {
+    ...TYPOGRAPHY.h2,
+    ...NUMERIC,
+    color: COLORS.text,
+    marginTop: 4,
+  },
+  certificateHolderMeta: {
+    ...TYPOGRAPHY.bodySm,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  certificateStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  certificateStat: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  groupsTitle: {
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  emptyGroupsText: {
+    ...TYPOGRAPHY.bodySm,
+    color: COLORS.textSecondary,
+  },
+  groupRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.mist,
+  },
+  groupName: {
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.text,
+  },
+  groupJurisdiction: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: 1,
+  },
+  demoBadge: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
+    color: '#92400E',
+    marginTop: 2,
+  },
+  offlineNote: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  groupCountPill: {
+    backgroundColor: COLORS.orange,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  groupCountText: {
+    ...TYPOGRAPHY.bodySmStrong,
+    ...NUMERIC,
+    color: COLORS.onOrange,
+  },
+  eligibilityBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  eligibilityBannerActive: {
+    backgroundColor: '#DCFCE7',
+    borderColor: '#BBF7D0',
+  },
+  eligibilityBannerPending: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
+  },
+  eligibilityText: {
+    ...TYPOGRAPHY.bodySmStrong,
+    flex: 1,
+  },
+  eligibilityTextActive: {
+    color: '#15803D',
+  },
+  eligibilityTextPending: {
+    color: '#92400E',
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.mist,
+    borderWidth: 1,
+    borderColor: COLORS.mist,
+    paddingVertical: 14,
+    minHeight: 44,
+    borderRadius: 14,
+  },
+  downloadButtonText: {
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.muted,
+  },
+  viewButton: {
+    backgroundColor: COLORS.orange,
+    borderColor: COLORS.orange,
+    marginBottom: 12,
+  },
+  viewButtonText: {
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.onOrange,
+  },
+  downloadCaption: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.muted,
+    textAlign: 'center',
+    marginTop: 6,
   },
 });

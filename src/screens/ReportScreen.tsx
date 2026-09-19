@@ -29,6 +29,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { TicketCategory } from '../types';
 
 const STANDARD_DEPARTMENTS = [
   'Public Works Department (Punjab PWD) - Arterial Road Division',
@@ -64,7 +65,7 @@ interface ReportScreenProps {
 }
 
 export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }) => {
-  const { currentUser, updatePoints } = useAuth();
+  const { currentUser, updatePoints, logContribution } = useAuth();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoKind, setPhotoKind] = useState<'local' | 'remote' | null>(null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number }>({
@@ -218,6 +219,12 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
         `${String(res.category || analysisResult?.category || 'DEFECT').replace(/_/g, ' ')} · ${selectedDepartment.split('-')[0]} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
       );
       updatePoints(res?.escrow_points ?? 50);
+      logContribution({
+        id: String(res?.id ?? res?.ticket_id ?? `${Date.now()}`),
+        kind: 'REPORT',
+        category: (res?.category || analysisResult?.category || 'UNKNOWN') as TicketCategory,
+        at: new Date().toISOString(),
+      });
 
       if (onSuccess) {
         setTimeout(() => onSuccess(), 1800);

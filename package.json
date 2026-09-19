@@ -52,6 +52,7 @@
     "test:location": "tsx src/__tests__/location.test.ts",
     "test:anticheat": "tsx src/__tests__/antiCheat.test.ts",
     "test:postcard": "tsx src/__tests__/postCard.test.ts",
+    "test:contributions": "tsx src/__tests__/contributions.test.ts",
     "tunnel": "node ./scripts/dev-tunnel.js",
     "tunnel:named": "node ./scripts/dev-tunnel.js --hostname dev.deserver.in --api-hostname api.deserver.in"
   },

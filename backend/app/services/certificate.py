@@ -108,7 +108,7 @@ def generate_certificate_data(
     total_tasks = len(tasks)
     verified_tasks = sum(
         1 for t in tasks if t.get("status") in ["COMPLETED", "VERIFIED", "RESOLVED"]
-    ) or total_tasks
+    )
 
     # Generate unique tamper-evident verification serial ID with Punjab / Ludhiana prefix
     hash_seed = f"{user.id}:{user.public_handle}:{total_tasks}:{user.points_balance}"

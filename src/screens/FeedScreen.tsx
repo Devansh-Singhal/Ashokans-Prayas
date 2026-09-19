@@ -20,7 +20,7 @@ import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 import { Sparkles } from 'lucide-react-native';
 
 export const FeedScreen: React.FC = () => {
-  const { currentUser, updatePoints } = useAuth();
+  const { currentUser, updatePoints, logContribution } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -89,6 +89,12 @@ export const FeedScreen: React.FC = () => {
       setVerificationResult(result);
       setIsModalVisible(true);
       updatePoints(result.credited_points);
+      logContribution({
+        id: ticket.id,
+        kind: 'VERIFICATION',
+        category: ticket.category,
+        at: new Date().toISOString(),
+      });
 
       // Refresh feed to update ticket to RESOLVED
       fetchFeed();

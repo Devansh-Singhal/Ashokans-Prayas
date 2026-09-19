@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { BarChart3, Camera, Map, Newspaper, User } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { COLORS } from '@/constants/colors';
+
 export type TabKey = 'feed' | 'map' | 'report' | 'ward' | 'profile';
 
 const TABS: { key: TabKey; label: string; icon: typeof Newspaper }[] = [
@@ -20,10 +22,10 @@ const PAD = 12; // horizontal padding inside the bar (5 tabs need tighter gutter
 const CIRCLE = 58;
 const NOTCH_HALF = 45; // notch is 90 wide, 45 deep
 
-const BAR_COLOR = '#0B1B2F';
-const ACCENT = '#FF7A00';
-const ICON_ACTIVE = '#0B1B2F';
-const ICON_IDLE = '#FFFFFF';
+const BAR_COLOR = COLORS.navDark;
+const ACCENT = COLORS.orange;
+const ICON_ACTIVE = COLORS.onOrange; // navy on orange — white fails contrast per the palette
+const ICON_IDLE = COLORS.white;
 
 function Icon({ Cmp, color }: { Cmp: typeof Newspaper; color: string }) {
   return <Cmp size={22} color={color} />;

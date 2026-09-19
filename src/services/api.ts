@@ -1,4 +1,4 @@
-import { Ticket, User, VerificationResult, WardScorecard } from '../types';
+import { CertificateData, Ticket, User, UserTasksResponse, VerificationResult, WardScorecard } from '../types';
 
 // Ward identifiers: default to Ludhiana Ward 14
 export const DEFAULT_WARD_ID = 'WARD_LUDHIANA_14';
@@ -381,7 +381,7 @@ export class CivicFeedApi {
     };
   }
 
-  async getUserTasks(userId: string) {
+  async getUserTasks(userId: string): Promise<UserTasksResponse> {
     const res = await timedFetch(`${this.baseUrl}/certificates/user-tasks?user_id=${encodeURIComponent(userId)}`);
     if (!res.ok) {
       throw new Error(`Failed to fetch user tasks (${res.status})`);
@@ -389,7 +389,7 @@ export class CivicFeedApi {
     return res.json();
   }
 
-  async generateCertificate(userId: string) {
+  async generateCertificate(userId: string): Promise<CertificateData> {
     const res = await timedFetch(`${this.baseUrl}/certificates/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

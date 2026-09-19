@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { DemoPersona, User } from '../types';
+import { Contribution, DemoPersona, User } from '../types';
 import { api } from '../services/api';
 
 export const DEMO_PERSONAS: DemoPersona[] = [
@@ -47,6 +47,8 @@ interface AuthContextType {
   isParentConsentModalVisible: boolean;
   setParentConsentModalVisible: (visible: boolean) => void;
   simulateParentApproval: () => Promise<void>;
+  contributions: Contribution[];
+  logContribution: (contribution: Contribution) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentPersona, setCurrentPersona] = useState<DemoPersona>(DEMO_PERSONAS[0]);
   const [isParentConsentModalVisible, setParentConsentModalVisible] = useState(false);
   const [balances, setBalances] = useState<Record<string, number>>({});
+  const [contributionsByPersona, setContributionsByPersona] = useState<Record<string, Contribution[]>>({});
   const [currentUser, setCurrentUser] = useState<User>({
     id: currentPersona.id,
     public_handle: currentPersona.handle,
@@ -94,6 +97,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  const logContribution = (contribution: Contribution) => {
+    setContributionsByPersona((prev) => {
+      const list = prev[currentPersona.id] ?? [];
+      const alreadyLogged = list.some(
+        (c) => c.id === contribution.id && c.kind === contribution.kind
+      );
+      if (alreadyLogged) return prev;
+      return { ...prev, [currentPersona.id]: [...list, contribution] };
+    });
+  };
+
   const simulateParentApproval = async () => {
     // Use the real API when a consent token exists; otherwise fall back to a local flip (demo mode).
     if (currentUser.consent_token) {
@@ -126,6 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isParentConsentModalVisible,
         setParentConsentModalVisible,
         simulateParentApproval,
+        contributions: contributionsByPersona[currentPersona.id] ?? [],
+        logContribution,
       }}
     >
       {children}

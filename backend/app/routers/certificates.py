@@ -29,6 +29,7 @@ DEMO_SIMULATED_TASKS = [
         "description": "Continuous 3-axis accelerometer and gyroscope vibration telemetry captured along Dugri-Gill Road corridor.",
         "ward_id": "WARD_LUDHIANA_14",
         "status": "COMPLETED",
+        "is_simulated": True,
         "timestamp": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
     },
     {
@@ -39,6 +40,7 @@ DEMO_SIMULATED_TASKS = [
         "description": "Field visual audit of 4 stormwater drain culvert grates ahead of seasonal monsoon alerts.",
         "ward_id": "WARD_LUDHIANA_14",
         "status": "COMPLETED",
+        "is_simulated": True,
         "timestamp": (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(),
     },
     {
@@ -49,6 +51,7 @@ DEMO_SIMULATED_TASKS = [
         "description": "Post-clearance verification of municipal solid waste removal with geo-anchored photo evidence.",
         "ward_id": "WARD_LUDHIANA_14",
         "status": "COMPLETED",
+        "is_simulated": True,
         "timestamp": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
     },
     {
@@ -59,6 +62,7 @@ DEMO_SIMULATED_TASKS = [
         "description": "Pedestrian safety sweep identifying displaced curb blocks obstructing elderly transit near bus stand.",
         "ward_id": "WARD_LUDHIANA_14",
         "status": "COMPLETED",
+        "is_simulated": True,
         "timestamp": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(),
     },
 ]
