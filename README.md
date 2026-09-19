@@ -4,26 +4,68 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Get started
 
-1. Install dependencies
+**Requirements:** Node 20+, and [Expo Go](https://expo.dev/go) installed on your phone.
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. Start the app
+Then pick the command that matches the network you are on.
 
-   ```bash
-   npx expo start
-   ```
+### On a normal network (home Wi-Fi, phone hotspot)
 
-In the output, you'll find options to open the app in a
+```bash
+npm start
+```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Scan the QR code with your iPhone Camera app. Your phone and laptop must be on
+the same network.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### On Plaksha campus Wi-Fi
+
+Campus Wi-Fi runs a FortiGate firewall that blocks ngrok, so Expo's built-in
+`--tunnel` can never connect. It may also stop your phone from reaching your
+laptop directly, which breaks `npm start`. Use a Cloudflare tunnel instead:
+
+```bash
+npm run tunnel
+```
+
+This prints a `https://<random-words>.trycloudflare.com` URL. Open Expo Go,
+tap **Enter URL manually**, and paste it. Your phone can be on any network,
+including cellular.
+
+The URL changes every restart, so paste it again each session.
+
+**One-time setup:** install `cloudflared` and make sure it is on your PATH.
+
+| OS | Command |
+| --- | --- |
+| Windows | `winget install --id Cloudflare.cloudflared` |
+| macOS | `brew install cloudflared` |
+| Linux | [download a release](https://github.com/cloudflare/cloudflared/releases/latest) |
+
+Verify with `cloudflared --version`.
+
+### Stable URL (maintainer only)
+
+```bash
+npm run tunnel:named
+```
+
+Serves on `https://dev.deserver.in`, which never changes. This needs Cloudflare
+credentials in `~/.cloudflared/` that are not in this repo, so it only works on
+a machine that has been set up for it. Everyone else uses `npm run tunnel`.
+
+### Useful flags
+
+```bash
+npm run tunnel -- --clear      # clear the Metro cache
+EXPO_PORT=8082 npm run tunnel  # use a different port
+```
+
+Screens live in **src/app** and use [file-based routing](https://docs.expo.dev/router/introduction)
+— a new file in that directory becomes a new route.
 
 ## Get a fresh project
 
