@@ -69,20 +69,6 @@ export const FeedScreen: React.FC = () => {
     fetchFeed();
   };
 
-  const handleEndorse = async (ticketId: string) => {
-    try {
-      await api.endorseTicket(ticketId, currentUser.id);
-      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, upvotes: t.upvotes + 1 } : t)));
-      updatePoints(25);
-    } catch (err: any) {
-      if (err?.message === 'ALREADY_ENDORSED') {
-        Alert.alert('Already endorsed', 'You have already endorsed this ticket.');
-      } else {
-        Alert.alert('Endorse failed', err?.message || 'Could not endorse ticket.');
-      }
-    }
-  };
-
   const handleVerifyPress = async (ticket: Ticket) => {
     if (ticket.status !== 'PROVISIONAL_FIX') {
       Alert.alert('Not ready', 'Ticket is not awaiting audit yet.');
@@ -176,7 +162,6 @@ export const FeedScreen: React.FC = () => {
               ticket={item}
               currentUserId={currentUser.id}
               userCoords={userCoords}
-              onEndorse={handleEndorse}
               onVerifyPress={handleVerifyPress}
             />
           )}

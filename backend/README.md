@@ -22,7 +22,6 @@ testable offline. `.env` is loaded automatically at startup via `python-dotenv`.
 - `GET /api/v1/auth/verify-parent-consent?token=XYZ`
 - `POST /api/v1/tickets/report` (multipart: photo, latitude, longitude, ward_id, reporter_id)
 - `GET /api/v1/feed/ward/{ward_id}?page=1&size=20`
-- `POST /api/v1/tickets/{id}/endorse`
 - `POST /api/v1/tickets/{id}/provisional-fix` (multipart: photo)
 - `POST /api/v1/tickets/{id}/verify` (multipart: photo + auditor_id form field)
 - `GET /api/v1/tickets/ward/{ward_id}/scorecard`

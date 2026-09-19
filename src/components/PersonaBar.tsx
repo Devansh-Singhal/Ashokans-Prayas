@@ -108,7 +108,7 @@ export const PersonaBar: React.FC = () => {
                 <View style={styles.personaTextGroup}>
                   <Text style={styles.personaNameLabel}>Rahul (Citizen Reporter)</Text>
                   <Text style={styles.personaDesc}>
-                    Can photograph new defects and tap &quot;I Hit This Too!&quot; to escalate SLA priorities (+25 / +50 pts).
+                    Photographs new defects for AI classification (+50 escrow pts).
                   </Text>
                 </View>
               </View>

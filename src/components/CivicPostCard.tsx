@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Share,
-  Modal,
 } from 'react-native';
 import {
   MapPin,
   CheckCircle2,
   Share2,
   ShieldCheck,
-  Info,
-  X,
-  TrendingUp,
-  Clock,
-  Award,
 } from 'lucide-react-native';
 import { Ticket, TicketCategory } from '../types';
 import { SeverityMeter } from './SeverityMeter';
@@ -26,7 +20,6 @@ import { BeforeAfterView } from './BeforeAfterView';
 import { GeofencePill } from './GeofencePill';
 import { calculateHaversineDistance } from '../services/location';
 import {
-  ImpactFlameIcon,
   MonsoonPauseIcon,
   PotholeDefectIcon,
   WasteAccumulationIcon,
@@ -38,7 +31,6 @@ interface Props {
   ticket: Ticket;
   currentUserId: string;
   userCoords: { latitude: number; longitude: number };
-  onEndorse: (ticketId: string) => Promise<void>;
   onVerifyPress: (ticket: Ticket) => void;
 }
 
@@ -46,21 +38,9 @@ export const CivicPostCard: React.FC<Props> = ({
   ticket,
   currentUserId,
   userCoords,
-  onEndorse,
   onVerifyPress,
 }) => {
-  const [upvotes, setUpvotes] = useState(ticket.upvotes);
-  const [hasEndorsed, setHasEndorsed] = useState(false);
-  const [isEndorsing, setIsEndorsing] = useState(false);
-  const [showBonus, setShowBonus] = useState(false);
-  const [showEscalationModal, setShowEscalationModal] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+  void currentUserId;
 
   const reporterId = (ticket as Ticket & { reporter_id?: string }).reporter_id;
   const authorHandle = reporterId
@@ -99,25 +79,6 @@ export const CivicPostCard: React.FC<Props> = ({
       return `${Math.floor(diffSec / 86400)}d ago`;
     } catch {
       return 'Recently';
-    }
-  };
-
-  const handleEndorse = async () => {
-    if (hasEndorsed || isEndorsing) return;
-    setIsEndorsing(true);
-    setUpvotes((prev) => prev + 1);
-    setHasEndorsed(true);
-    setShowBonus(true);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setShowBonus(false), 2200);
-
-    try {
-      await onEndorse(ticket.id);
-    } catch (err) {
-      setUpvotes((prev) => prev - 1);
-      setHasEndorsed(false);
-    } finally {
-      setIsEndorsing(false);
     }
   };
 
@@ -202,49 +163,8 @@ export const CivicPostCard: React.FC<Props> = ({
         </View>
       )}
 
-      {/* 6. Social Action & Civic Endorsement Area */}
+      {/* 6. Audit & Share Actions */}
       <View style={styles.actionContainer}>
-        <View style={styles.endorseWrapper}>
-          <TouchableOpacity
-            style={[styles.endorseButton, hasEndorsed && styles.endorseButtonActive]}
-            onPress={handleEndorse}
-            activeOpacity={0.7}
-          >
-            <ImpactFlameIcon
-              size={18}
-              color={hasEndorsed ? '#EA580C' : '#64748B'}
-              fill={hasEndorsed ? '#EA580C' : 'none'}
-            />
-            <View style={styles.endorseTextColumn}>
-              <View style={styles.endorseTitleRow}>
-                <Text style={[styles.endorseTitle, hasEndorsed && styles.endorseTitleActive]}>
-                  I Hit This Too! ({upvotes})
-                </Text>
-              </View>
-              <Text style={styles.endorseSubtitle}>
-                Endorse hazard • Escalates repair SLA (+25 pts)
-              </Text>
-            </View>
-
-            {showBonus && (
-              <View style={styles.floatingBonus}>
-                <Text style={styles.floatingBonusText}>+25 pts!</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Info trigger for "I Hit This Too!" mechanic */}
-          <TouchableOpacity
-            style={styles.infoTrigger}
-            onPress={() => setShowEscalationModal(true)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            activeOpacity={0.7}
-          >
-            <Info size={16} color="#94A3B8" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Secondary Actions: Verify Fix or Share */}
         <View style={styles.secondaryActions}>
           {canVerify ? (
             <TouchableOpacity
@@ -283,71 +203,6 @@ export const CivicPostCard: React.FC<Props> = ({
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* 7. Civic SLA Escalation Explainer Modal */}
-      <Modal
-        visible={showEscalationModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowEscalationModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
-            <View style={styles.modalHeader}>
-              <View style={styles.modalTitleGroup}>
-                <ImpactFlameIcon size={20} color="#EA580C" fill="#EA580C" />
-                <Text style={styles.modalTitle}>Why tap &quot;I Hit This Too!&quot;?</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setShowEscalationModal(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <X size={20} color="#94A3B8" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalBody}>
-              <View style={styles.modalPoint}>
-                <TrendingUp size={18} color="#EA580C" style={styles.pointIcon} />
-                <View style={styles.pointTextGroup}>
-                  <Text style={styles.pointHeading}>Priority Escalation</Text>
-                  <Text style={styles.pointDescription}>
-                    Every citizen endorsement moves this hazard up the municipal repair priority queue.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.modalPoint}>
-                <Clock size={18} color="#0284C7" style={styles.pointIcon} />
-                <View style={styles.pointTextGroup}>
-                  <Text style={styles.pointHeading}>48-Hour SLA Trigger</Text>
-                  <Text style={styles.pointDescription}>
-                    Defects with 5+ endorsements trigger the Municipal Rapid Response SLA, cutting repair turnaround from 7 days to 48 hours.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.modalPoint}>
-                <Award size={18} color="#10B981" style={styles.pointIcon} />
-                <View style={styles.pointTextGroup}>
-                  <Text style={styles.pointHeading}>Citizen Escrow Bounty</Text>
-                  <Text style={styles.pointDescription}>
-                    You immediately receive +25 civic reputation points in your Ward 14 profile for confirming the active hazard.
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.modalConfirmButton}
-              onPress={() => setShowEscalationModal(false)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.modalConfirmText}>Got it, thanks!</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -495,74 +350,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#F1F5F9',
     gap: 10,
   },
-  endorseWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  endorseButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    position: 'relative',
-    gap: 10,
-    minHeight: 52,
-  },
-  endorseButtonActive: {
-    backgroundColor: '#FFF7ED',
-    borderColor: '#FDBA74',
-  },
-  endorseTextColumn: {
-    flex: 1,
-  },
-  endorseTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  endorseTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  endorseTitleActive: {
-    color: '#C2410C',
-  },
-  endorseSubtitle: {
-    fontSize: 10,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  floatingBonus: {
-    position: 'absolute',
-    top: -14,
-    right: 12,
-    backgroundColor: '#EA580C',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  floatingBonusText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  infoTrigger: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   secondaryActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -632,80 +419,5 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 22,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingBottom: 12,
-  },
-  modalTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  modalBody: {
-    gap: 14,
-    marginBottom: 20,
-  },
-  modalPoint: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  pointIcon: {
-    marginTop: 2,
-  },
-  pointTextGroup: {
-    flex: 1,
-  },
-  pointHeading: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 2,
-  },
-  pointDescription: {
-    fontSize: 12,
-    color: '#64748B',
-    lineHeight: 18,
-  },
-  modalConfirmButton: {
-    backgroundColor: '#0F172A',
-    paddingVertical: 13,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  modalConfirmText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

@@ -24,9 +24,5 @@ class RegisterRequest(BaseModel):
     parent_phone: str | None = Field(default=None, max_length=16, pattern=r"^\+?[0-9]{4,16}$")
 
 
-class EndorseRequest(BaseModel):
-    user_id: str
-
-
 class VerifyRequest(BaseModel):
     auditor_id: str

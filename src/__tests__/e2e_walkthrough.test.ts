@@ -56,16 +56,12 @@ async function runStageDemoWalkthrough() {
   console.log("   - Category: " + newTicket.category + " | Severity: " + newTicket.severity + "/5 | Status: " + newTicket.status);
   console.log("   - Citizen earns +50 pts (held in escrow).");
 
-  // 3. PUBLIC FEED & ENDORSEMENT
-  console.log("\nSTEP 3: Neighborhood Visibility & Endorsement (I Hit This Too!)...");
+  // 3. PUBLIC FEED VISIBILITY
+  console.log("\nSTEP 3: Neighborhood Visibility on Ward Feed...");
   const feedBefore = await api.getWardFeed(wardId);
   const foundInFeed = feedBefore.tickets.find((t) => t.id === newTicket.id);
   assert(!!foundInFeed, "Ticket must be immediately visible on public feed");
   console.log("   [OK] Ticket verified live on Ward 14 Social Timeline (Total tickets: " + feedBefore.total + ")");
-
-  // Stranger endorses ticket
-  const endorseResult = await api.endorseTicket(newTicket.id, personaAnjali.id);
-  console.log("   [OK] Persona B tapped I Hit This Too! -> Upvotes incremented to " + endorseResult.upvotes + " (+25 pts bonus)");
 
   // 4. MUNICIPAL WORKER UPLOADS FIX
   console.log("\nSTEP 4: Municipal contractor uploads patch photo...");

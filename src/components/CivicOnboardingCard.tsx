@@ -73,13 +73,13 @@ export const CivicOnboardingCard: React.FC = () => {
             </View>
             <View style={styles.stepContent}>
               <View style={styles.stepHeadingRow}>
-                <Text style={styles.stepNumber}>2. ESCALATE</Text>
+                <Text style={styles.stepNumber}>2. FIX</Text>
                 <View style={styles.pointsPill}>
-                  <Text style={styles.pointsPillText}>+25 pts</Text>
+                  <Text style={styles.pointsPillText}>crew upload</Text>
                 </View>
               </View>
               <Text style={styles.stepDesc}>
-                Tap &quot;I Hit This Too!&quot; on existing defects to force a 48h emergency repair SLA.
+                Municipal crews upload a repair photo, marking the defect ready for audit.
               </Text>
             </View>
           </View>

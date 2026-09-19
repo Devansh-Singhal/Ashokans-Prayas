@@ -24,7 +24,7 @@ async def ward_feed(
         await db.execute(
             select(Ticket)
             .where(Ticket.ward_id == ward_id)
-            .order_by(desc(Ticket.upvotes_count), desc(Ticket.created_at))
+            .order_by(desc(Ticket.created_at))
             .offset((page - 1) * size)
             .limit(size)
         )

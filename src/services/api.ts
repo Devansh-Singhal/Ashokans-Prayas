@@ -1,3 +1,4 @@
+import { File as ExpoFile } from 'expo-file-system';
 import { Ticket, User, VerificationResult, WardScorecard } from '../types';
 
 let PlatformOS = typeof window === 'undefined' ? 'node' : 'web';
@@ -30,9 +31,37 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
     filename = defaultName;
   }
   const match = /\.(\w+)$/.exec(filename);
-  const type = match ? `image/${match[1]}` : 'image/jpeg';
+  const mimeType = match ? `image/${match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase()}` : 'image/jpeg';
 
-  // 1. Web browser environment: browser FormData expects a genuine Blob
+  const isNativeFileUri = photoUri.startsWith('file://') || photoUri.startsWith('content://') || photoUri.startsWith('ph://');
+
+  // 1. Native local file (camera / gallery pick): hand a real Blob-backed File to
+  //    Expo fetch. The old `{ uri, name, type }` object throws
+  //    "Unsupported FormDataPart implementation" on SDK 57's fetch — a Blob (with a
+  //    `bytes()` reader, which ExpoFile provides) is the only non-string part it
+  //    accepts besides string/Blob.
+  if (isNativeFileUri) {
+    const file = new ExpoFile(photoUri);
+    try {
+      const bytes = await file.bytes();
+      const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
+      (blob as unknown as { name?: string }).name = filename;
+      formData.append(fieldName, blob, filename);
+      return;
+    } catch (err) {
+      console.warn('Native file read fallback', err);
+    }
+    // Fall through to the legacy object form only if the file can't be read —
+    // legacy XHR-based stacks may still accept it.
+    formData.append(fieldName, {
+      uri: photoUri,
+      name: filename,
+      type: mimeType,
+    } as any);
+    return;
+  }
+
+  // 2. Web browser environment: browser FormData expects a genuine Blob
   if (PlatformOS === 'web' || (typeof window !== 'undefined' && !(window as any).navigator?.product?.includes('ReactNative'))) {
     try {
       const response = await fetch(photoUri);
@@ -44,14 +73,14 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
     }
   }
 
-  // 2. Node.js test environment (tsx / jest)
+  // 3. Node.js test environment (tsx / jest)
   if (typeof window === 'undefined' && typeof Blob !== 'undefined') {
     if (photoUri.startsWith('http://') || photoUri.startsWith('https://')) {
       try {
         const res = await fetch(photoUri);
         if (res.ok) {
           const buf = await res.arrayBuffer();
-          const blob = new Blob([buf], { type });
+          const blob = new Blob([buf], { type: mimeType });
           formData.append(fieldName, blob, filename);
           return;
         }
@@ -74,13 +103,11 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
     return;
   }
 
-  // 3. React Native Mobile (iOS / Android)
-  const cleanUri = PlatformOS === 'ios' ? photoUri.replace('file://', '') : photoUri;
-  formData.append(fieldName, {
-    uri: cleanUri,
-    name: filename,
-    type,
-  } as any);
+  // Unreachable on native now (handled in branch 1) — kept as a typed
+  // last resort so no code path appends an unsupported part.
+  throw new Error(
+    'Unsupported photo source: expected a file:// / content:// / ph:// URI on native, or http(s) URL.'
+  );
 }
 
 export class CivicFeedApi {
@@ -181,28 +208,6 @@ export class CivicFeedApi {
       ticket_id: data.ticket_id || data.id,
       ...data,
       points_awarded: data.escrow_points,
-    };
-  }
-
-  async endorseTicket(ticketId: string, userId: string): Promise<{ message: string; upvotes: number; awarded: boolean; ticket_id: string }> {
-    const res = await fetch(`${this.baseUrl}/tickets/${ticketId}/endorse`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId }),
-    });
-    if (res.status === 409) {
-      throw new Error('ALREADY_ENDORSED');
-    }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Failed to endorse ticket');
-    }
-    const data = await res.json();
-    return {
-      message: data.message || 'Endorsed',
-      upvotes: data.upvotes,
-      awarded: data.awarded,
-      ticket_id: data.ticket_id,
     };
   }
 

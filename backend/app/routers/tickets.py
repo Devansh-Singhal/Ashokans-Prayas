@@ -4,13 +4,13 @@ import statistics
 import uuid
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.anti_cheat import BASE_POINTS, credited_points
 from app.db import get_db
-from app.models import ConsentStatus, Endorsement, Ticket, TicketStatus, User, Verification, VerificationPair
-from app.schemas import EndorseRequest, VerifyRequest
+from app.models import ConsentStatus, Ticket, TicketStatus, User, Verification, VerificationPair
+from app.schemas import VerifyRequest
 from app.services.deepseek import classify_image
 
 router = APIRouter(prefix="/api/v1/tickets", tags=["tickets"])
@@ -19,7 +19,6 @@ UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 REPORT_ESCROW_POINTS = 50
-ENDORSE_POINTS = 25
 TRANSIENT_HOURS = 4
 DEDUP_METERS = 50
 
@@ -146,29 +145,6 @@ async def report_ticket(
         "privacy_blur": ai.get("bounding_boxes_to_blur", []),
         "commercial_adjacent": ticket.is_commercial_adjacent,
     }
-
-
-@router.post("/{ticket_id}/endorse")
-async def endorse(ticket_id: str, body: EndorseRequest, db: AsyncSession = Depends(get_db)):
-    ticket = await db.get(Ticket, ticket_id)
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    if body.user_id == ticket.reporter_id:
-        raise HTTPException(status_code=403, detail="Cannot endorse your own report")
-    user = await db.get(User, body.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.consent_status != ConsentStatus.ACTIVE.value:
-        raise HTTPException(status_code=403, detail="Account pending parent consent")
-    existing = await db.get(Endorsement, (ticket_id, body.user_id))
-    if existing:
-        raise HTTPException(status_code=409, detail="Already endorsed")
-    db.add(Endorsement(ticket_id=ticket_id, user_id=body.user_id))
-    await db.execute(update(Ticket).where(Ticket.id == ticket_id).values(upvotes_count=Ticket.upvotes_count + 1))
-    await db.execute(update(User).where(User.id == body.user_id).values(points_balance=User.points_balance + ENDORSE_POINTS))
-    await db.commit()
-    ticket = await db.get(Ticket, ticket_id)
-    return {"ticket_id": ticket.id, "upvotes": ticket.upvotes_count, "awarded": ENDORSE_POINTS}
 
 
 @router.post("/{ticket_id}/provisional-fix")

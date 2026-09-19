@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,18 +8,15 @@ import {
   ScrollView,
   useWindowDimensions,
   Platform,
-  Alert,
 } from 'react-native';
 import { MapPin, Navigation, ExternalLink, ShieldCheck } from 'lucide-react-native';
 import { Ticket, TicketStatus } from '../types';
 import { api } from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { InteractiveMap } from '../components/InteractiveMap';
 import { StatusBadge } from '../components/StatusBadge';
 import { SeverityMeter } from '../components/SeverityMeter';
 import { calculateHaversineDistance, getCurrentGPS } from '../services/location';
 import {
-  ImpactFlameIcon,
   PotholeDefectIcon,
   WasteAccumulationIcon,
   StreetlightDefectIcon,
@@ -30,15 +27,12 @@ type FilterType = 'ALL' | 'REPORTED' | 'PROVISIONAL_FIX' | 'RESOLVED' | 'WEATHER
 
 export const MapScreen: React.FC = () => {
   const { width } = useWindowDimensions();
-  const { currentUser } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
   const [userCoords, setUserCoords] = useState({ latitude: 28.6289, longitude: 77.2065 });
   const [usingFallback, setUsingFallback] = useState(true);
-  const [endorsingMap, setEndorsingMap] = useState<Record<string, boolean>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
-  const inFlight = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     loadTickets();
@@ -97,28 +91,6 @@ export const MapScreen: React.FC = () => {
         return <OpenDrainHazardIcon size={16} color="#0284C7" />;
       default:
         return <MapPin size={16} color="#64748B" />;
-    }
-  };
-
-  const handleEndorse = async (ticketId: string) => {
-    if (inFlight.current.has(ticketId)) return;
-    if (endorsingMap[ticketId] === true) return;
-    inFlight.current.add(ticketId);
-    try {
-      await api.endorseTicket(ticketId, currentUser?.id || 'demo-user');
-      setTickets((prev) =>
-        prev.map((t) => (t.id === ticketId ? { ...t, upvotes: t.upvotes + 1 } : t))
-      );
-      if (selectedTicket?.id === ticketId) {
-        setSelectedTicket((prev) => (prev ? { ...prev, upvotes: prev.upvotes + 1 } : null));
-      }
-      setEndorsingMap((prev) => ({ ...prev, [ticketId]: true }));
-    } catch (err) {
-      Alert.alert('Endorse failed', 'Could not endorse this ticket. Please try again.');
-    } finally {
-      inFlight.current.delete(ticketId);
-      // endorsingMap stays false unless success set it true; ensure re-enabled after failure
-      setEndorsingMap((prev) => (prev[ticketId] === true ? prev : { ...prev, [ticketId]: false }));
     }
   };
 
@@ -291,37 +263,15 @@ export const MapScreen: React.FC = () => {
                   {' • '}{formatCoord(selectedTicket.latitude)}, {formatCoord(selectedTicket.longitude)}
                 </Text>
               </View>
-
-              <View style={styles.endorseCounterRow}>
-                <ImpactFlameIcon size={15} color="#EA580C" fill="#EA580C" />
-                <Text style={styles.endorseCounterText}>
-                  {selectedTicket.upvotes} neighbors endorsed
-                </Text>
-              </View>
             </View>
           </View>
 
           {/* Drawer Actions */}
           <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[
-                styles.endorseButton,
-                endorsingMap[selectedTicket.id] && styles.endorseButtonDisabled,
-              ]}
-              onPress={() => handleEndorse(selectedTicket.id)}
-              disabled={endorsingMap[selectedTicket.id] === true}
-              activeOpacity={0.8}
-            >
-              <ImpactFlameIcon size={16} color="#FFFFFF" fill="#FFFFFF" />
-              <Text style={styles.endorseButtonText}>
-                {endorsingMap[selectedTicket.id] ? 'Endorsed (+25p)' : 'I Hit This Too! (+25p)'}
-              </Text>
-            </TouchableOpacity>
-
             {selectedTicket.status === 'PROVISIONAL_FIX' && (
               <View style={styles.auditPromptBox}>
                 <ShieldCheck size={16} color="#10B981" />
-                <Text style={styles.auditPromptText}>Fix ready for citizen audit</Text>
+                <Text style={styles.auditPromptText}>Fix ready for citizen audit — verify it in the feed</Text>
               </View>
             )}
           </View>
@@ -465,45 +415,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-  endorseCounterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  endorseCounterText: {
-    color: '#EA580C',
-    fontSize: 11,
-    fontWeight: '700',
-  },
   actionRow: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'center',
   },
-  endorseButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EA580C',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    minHeight: 46,
-    gap: 8,
-  },
-  endorseButtonDisabled: {
-    backgroundColor: '#475569',
-  },
-  endorseButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
   auditPromptBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flex: 1,
     backgroundColor: '#064E3B',
     paddingHorizontal: 12,
     paddingVertical: 12,

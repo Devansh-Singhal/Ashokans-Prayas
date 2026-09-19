@@ -190,8 +190,8 @@ export const ScorecardScreen: React.FC = () => {
         </View>
 
         <Text style={styles.slaExplainer}>
-          Defects with 5+ endorsements trigger the Municipal Rapid Response SLA. Median latency
-          metrics are synchronized daily with Resident Welfare Associations (RWAs).
+          Median latency metrics are synchronized daily with Resident Welfare
+          Associations (RWAs).
         </Text>
       </View>
 

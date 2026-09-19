@@ -49,10 +49,9 @@ assert(!!mockTicket.resolution_photo_url, 'Provisional fix must contain resoluti
 assert(mockTicket.status === 'PROVISIONAL_FIX', 'Status must be PROVISIONAL_FIX');
 console.log('✅ Test 3: Dual before/after photos present for provisional verification');
 
-// 4. Verify optimistic upvote increment
-let currentUpvotes = mockTicket.upvotes;
-currentUpvotes += 1;
-assert(currentUpvotes === 43, 'Upvote count must increment by 1');
-console.log('✅ Test 4: Optimistic upvote count increment verified (+25 pts bonus triggered)');
+// 4. Verify geofence gating for the audit button
+assert(distNear <= 50, 'Audit button must enable in range');
+assert(distFar > 50, 'Audit button must lock out of range');
+console.log('✅ Test 4: Audit-button geofence gating verified (in-range enabled, out-of-range locked)');
 
 console.log('🎉 ALL CIVIC POST CARD TESTS PASSED SUCCESSFULLY!');

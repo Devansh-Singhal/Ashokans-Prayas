@@ -100,11 +100,3 @@ class VerificationPair(Base):
     reporter_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     pairing_count: Mapped[int] = mapped_column(Integer, default=1)
     last_verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
-
-
-class Endorsement(Base):
-    __tablename__ = "endorsements"
-
-    ticket_id: Mapped[str] = mapped_column(String(36), ForeignKey("tickets.id"), primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

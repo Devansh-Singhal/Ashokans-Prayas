@@ -110,34 +110,6 @@ async def test_ticket_creation_deepseek_mock(client):
 
 
 @pytest.mark.asyncio
-async def test_endorsement_increments_counter(client):
-    reg = await client.post(
-        "/api/v1/auth/register", json={"phone": "+915555555555", "is_under_18": False}
-    )
-    uid = reg.json()["user_id"]
-    other = (
-        await client.post(
-            "/api/v1/auth/register", json={"phone": "+915555555556", "is_under_18": False}
-        )
-    ).json()
-    rep = await client.post(
-        "/api/v1/tickets/report",
-        files=photo("garbage.jpg"),
-        data={
-            "latitude": "28.62",
-            "longitude": "77.22",
-            "ward_id": "WARD_DELHI_14",
-            "reporter_id": uid,
-        },
-    )
-    tid = rep.json()["ticket_id"]
-    e = await client.post(f"/api/v1/tickets/{tid}/endorse", json={"user_id": other["user_id"]})
-    assert e.status_code == 200
-    assert e.json()["upvotes"] == 2
-    assert e.json()["awarded"] == 25
-
-
-@pytest.mark.asyncio
 async def test_reciprocity_decay_strangers(client):
     a = (
         await client.post(
@@ -383,36 +355,6 @@ async def test_self_verify_rejected(client):
         data={"auditor_id": uid, "latitude": "28.65", "longitude": "77.25"},
     )
     assert v.status_code == 403
-
-
-@pytest.mark.asyncio
-async def test_double_endorse_rejected(client):
-    a = (
-        await client.post(
-            "/api/v1/auth/register", json={"phone": "+911414141414", "is_under_18": False}
-        )
-    ).json()
-    b = (
-        await client.post(
-            "/api/v1/auth/register", json={"phone": "+911424242424", "is_under_18": False}
-        )
-    ).json()
-    rep = await client.post(
-        "/api/v1/tickets/report",
-        files=photo("pothole.jpg"),
-        data={
-            "latitude": "28.66",
-            "longitude": "77.26",
-            "ward_id": "WARD_ENDORSE",
-            "reporter_id": a["user_id"],
-        },
-    )
-    assert rep.status_code == 200
-    tid = rep.json()["ticket_id"]
-    first = await client.post(f"/api/v1/tickets/{tid}/endorse", json={"user_id": b["user_id"]})
-    assert first.status_code == 200
-    second = await client.post(f"/api/v1/tickets/{tid}/endorse", json={"user_id": b["user_id"]})
-    assert second.status_code == 409
 
 
 @pytest.mark.asyncio

@@ -36,12 +36,14 @@ const CURATED_DEMO_SAMPLES = [
 export const ReportScreen: React.FC = () => {
   const { currentUser, updatePoints } = useAuth();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoKind, setPhotoKind] = useState<'local' | 'remote' | null>(null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number }>({
     latitude: 28.6289,
     longitude: 77.2065,
   });
   const [locationLabel, setLocationLabel] = useState<string>('Ward 14 • Connaught Place, New Delhi');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzePhase, setAnalyzePhase] = useState<'upload' | 'vision' | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filedInfo, setFiledInfo] = useState<string | null>(null);
@@ -91,6 +93,7 @@ export const ReportScreen: React.FC = () => {
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setPhotoUri(result.assets[0].uri);
+        setPhotoKind('local');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Unable to open camera');
@@ -112,6 +115,7 @@ export const ReportScreen: React.FC = () => {
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setPhotoUri(result.assets[0].uri);
+        setPhotoKind('local');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Unable to select from library');
@@ -121,13 +125,18 @@ export const ReportScreen: React.FC = () => {
   const handleSelectSample = (sampleUrl: string) => {
     setErrorMessage(null);
     setPhotoUri(sampleUrl);
+    setPhotoKind('remote');
   };
 
   const handleSubmit = async () => {
     if (!photoUri) return;
     setIsAnalyzing(true);
+    setAnalyzePhase('upload');
     setErrorMessage(null);
 
+    // Phase MEDIUM: move to vision once bytes are on the wire. appendPhoto
+    // resolves its blob fetch internally, so approximate with a short delay.
+    const phaseTimer = setTimeout(() => setAnalyzePhase('vision'), 1500);
     try {
       const res = await api.reportTicket(
         photoUri,
@@ -139,7 +148,7 @@ export const ReportScreen: React.FC = () => {
       setIsSuccess(true);
       if (res?.category) {
         setFiledInfo(
-          `${res.category} · severity ${res.severity ?? '?'}/5 · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
+          `${String(res.category).replace(/_/g, ' ')} · severity ${res.severity ?? '?'}/5 · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
         );
       } else {
         setFiledInfo(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
@@ -148,19 +157,33 @@ export const ReportScreen: React.FC = () => {
       timer.current = setTimeout(() => {
         setIsSuccess(false);
         setPhotoUri(null);
+        setPhotoKind(null);
         setFiledInfo(null);
-      }, 3000);
+      }, 5000);
     } catch (err: any) {
       const msg: string = err?.message || '';
       setIsSuccess(false);
       if (msg.startsWith('DUPLICATE:')) {
-        setErrorMessage('Already mapped nearby. Endorse it in the feed instead.');
+        setErrorMessage('Already mapped nearby. Check the feed for the existing ticket.');
       } else if (msg.includes('NEEDS_CLARIFICATION')) {
-        setErrorMessage('AI could not classify — please retake with clearer framing.');
+        const detail = msg.split('NEEDS_CLARIFICATION:')[1]?.trim();
+        setErrorMessage(
+          detail
+            ? `AI could not classify this photo (${detail}). Retake with the defect centered and well lit.`
+            : 'AI could not classify — please retake with clearer framing.'
+        );
+      } else if (msg.includes('Vision service unavailable') || msg.includes('503')) {
+        setErrorMessage('AI vision is temporarily unavailable. Your photo was kept — retry in a few seconds.');
+      } else if (msg.includes('Unsupported photo source')) {
+        setErrorMessage('Could not read that photo file. Try camera capture or another gallery image.');
+      } else if (msg.includes('not a valid image')) {
+        setErrorMessage('That file is not a valid image. Pick a JPEG, PNG, or WebP photo.');
       } else {
         setErrorMessage(msg || 'Failed to publish report. Please try again.');
       }
     } finally {
+      clearTimeout(phaseTimer);
+      setAnalyzePhase(null);
       setIsAnalyzing(false);
     }
   };
@@ -192,12 +215,15 @@ export const ReportScreen: React.FC = () => {
           <Image source={{ uri: photoUri }} style={styles.previewImage} resizeMode="cover" />
           <View style={styles.aiTag}>
             <Sparkles size={13} color="#38BDF8" />
-            <Text style={styles.aiTagText}>DeepSeek 4.1 Vision Multi-Modal Ready</Text>
+            <Text style={styles.aiTagText}>
+              {photoKind === 'local' ? 'On-device photo • Vision upload ready' : 'Sample photo • Vision upload ready'}
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.retakeBtn}
             onPress={() => {
               setPhotoUri(null);
+              setPhotoKind(null);
               setFiledInfo(null);
             }}
             activeOpacity={0.8}
@@ -264,7 +290,7 @@ export const ReportScreen: React.FC = () => {
           <View style={{ flex: 1 }}>
             <Text style={styles.successTitle}>Report Published to Ward 14 Feed</Text>
             <Text style={styles.successSub}>
-              +50 Escrow Points Awarded. Defect is now publicly visible for neighborhood endorsement.
+              +50 Escrow Points Awarded. Defect is now publicly visible in the ward feed.
               {filedInfo ? `\nAI verdict: ${filedInfo}` : ''}
             </Text>
           </View>
@@ -280,7 +306,9 @@ export const ReportScreen: React.FC = () => {
             {isAnalyzing ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator color="#FFFFFF" size="small" />
-                <Text style={styles.submitBtnText}>Analyzing with DeepSeek 4.1 Vision...</Text>
+                <Text style={styles.submitBtnText}>
+                  {analyzePhase === 'vision' ? 'DeepSeek vision classifying…' : 'Uploading photo…'}
+                </Text>
               </View>
             ) : (
               <Text style={styles.submitBtnText}>Publish to Ward 14 Feed (+50 Escrow Pts)</Text>
