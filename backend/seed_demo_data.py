@@ -1,10 +1,13 @@
 import asyncio
 import uuid
 from datetime import datetime, timezone, timedelta
-from app.db import SessionLocal
+from app.db import SessionLocal, init_db
 from app.models import User, Ticket, TicketStatus, ConsentStatus
 
 async def seed():
+    # Tables may not exist yet on a fresh checkout; create_all is a no-op if they do.
+    await init_db()
+
     async with SessionLocal() as session:
         # 1. Ensure 3 demo personas exist
         personas = [

@@ -5,3 +5,4 @@ __pycache__/
 uploads/
 .env
 .vercel
+.venv/

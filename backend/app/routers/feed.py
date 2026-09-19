@@ -44,6 +44,8 @@ async def ward_feed(
                 "latitude": t.latitude,
                 "longitude": t.longitude,
                 "report_photo_url": t.report_photo_url,
+                "resolution_photo_url": t.resolution_photo_url,
+                "ward_id": t.ward_id,
                 "created_at": t.created_at.isoformat() if t.created_at else None,
             }
             for t in rows

@@ -1,98 +1,143 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { BarChart3, Map, Newspaper, PlusCircle, User } from 'lucide-react-native';
+import { useState } from 'react';
+import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { ParentConsentModal } from '@/components/ParentConsentModal';
+import { PersonaBar } from '@/components/PersonaBar';
+import { AuthProvider } from '@/context/AuthContext';
+import { FeedScreen } from '@/screens/FeedScreen';
+import { MapScreen } from '@/screens/MapScreen';
+import { ProfileScreen } from '@/screens/ProfileScreen';
+import { ReportScreen } from '@/screens/ReportScreen';
+import { ScorecardScreen } from '@/screens/ScorecardScreen';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+type Tab = 'feed' | 'map' | 'report' | 'scorecard' | 'profile';
 
-export default function HomeScreen() {
+export default function CivicFeedApp() {
+  const [activeTab, setActiveTab] = useState<Tab>('feed');
+
   return (
-    <ThemedView style={styles.container}>
+    <AuthProvider>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+        <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        {/* Sticky Stage Demo Switcher Bar */}
+        <PersonaBar />
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        {/* Active Screen Viewport */}
+        <View style={styles.screenContainer}>
+          {activeTab === 'feed' && <FeedScreen />}
+          {activeTab === 'map' && <MapScreen />}
+          {activeTab === 'report' && <ReportScreen />}
+          {activeTab === 'scorecard' && <ScorecardScreen />}
+          {activeTab === 'profile' && <ProfileScreen />}
+        </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
+        {/* Under-18 Parent Consent Simulator Modal */}
+        <ParentConsentModal />
+
+        {/* Bottom Navigation Tab Bar */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => setActiveTab('feed')}
+            activeOpacity={0.7}
+          >
+            <Newspaper size={20} color={activeTab === 'feed' ? '#0F172A' : '#94A3B8'} />
+            <Text style={[styles.navLabel, activeTab === 'feed' && styles.navLabelActive]}>Feed</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => setActiveTab('map')}
+            activeOpacity={0.7}
+          >
+            <Map size={20} color={activeTab === 'map' ? '#0F172A' : '#94A3B8'} />
+            <Text style={[styles.navLabel, activeTab === 'map' && styles.navLabelActive]}>Map</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.reportNavButton}
+            onPress={() => setActiveTab('report')}
+            activeOpacity={0.8}
+          >
+            <PlusCircle size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => setActiveTab('scorecard')}
+            activeOpacity={0.7}
+          >
+            <BarChart3 size={20} color={activeTab === 'scorecard' ? '#0F172A' : '#94A3B8'} />
+            <Text style={[styles.navLabel, activeTab === 'scorecard' && styles.navLabelActive]}>
+              Scorecard
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => setActiveTab('profile')}
+            activeOpacity={0.7}
+          >
+            <User size={20} color={activeTab === 'profile' ? '#0F172A' : '#94A3B8'} />
+            <Text style={[styles.navLabel, activeTab === 'profile' && styles.navLabelActive]}>
+              Profile
+            </Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
-    </ThemedView>
+    </AuthProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    backgroundColor: '#0F172A',
   },
-  heroSection: {
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    height: 64,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 10,
+  },
+  navItem: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
   },
-  title: {
-    textAlign: 'center',
+  navLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginTop: 3,
   },
-  code: {
-    textTransform: 'uppercase',
+  navLabelActive: {
+    color: '#0F172A',
+    fontWeight: '800',
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  reportNavButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6,
   },
 });
