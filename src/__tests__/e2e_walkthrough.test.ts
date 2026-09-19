@@ -14,7 +14,7 @@ async function runStageDemoWalkthrough() {
   console.log("  CIVICFEED: 90-SECOND HACKATHON STAGE DEMO WALKTHROUGH TEST  ");
   console.log("================================================================\n");
 
-  const wardId = "WARD_DELHI_14";
+  const wardId = "WARD_LUDHIANA_14";
   const sampleReportPhoto = "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=800&q=80";
   const sampleCleanPhoto = "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80";
 
@@ -40,8 +40,8 @@ async function runStageDemoWalkthrough() {
 
   // 2. CITIZEN REPORTS ISSUE
   console.log("\nSTEP 2: Persona A (Citizen Rahul) reports a dangerous pothole on 80ft Road...");
-    const baseLat = 28.6500 + Math.random() * 0.1;
-  const baseLon = 77.2300 + Math.random() * 0.1;
+    const baseLat = 30.8700 + Math.random() * 0.01;
+  const baseLon = 75.8400 + Math.random() * 0.01;
   const reportLat = baseLat + 0.001;
   const reportLon = baseLon + 0.001;
   const newTicket = await api.reportTicket(

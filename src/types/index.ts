@@ -64,6 +64,91 @@ export interface WardScorecard {
   avg_resolution_days: number;
   cleanliness_score: number; // 0 - 100
   recent_trend?: 'improving' | 'stable' | 'declining';
+  trend?: {
+    date: string;
+    resolved: number;
+    reported: number;
+  }[];
+}
+
+export interface CivicTask {
+  task_id: string;
+  task_type: string;
+  category: string;
+  title: string;
+  description: string;
+  ward_id: string;
+  status: string;
+  earned_hours?: number;
+  is_simulated?: boolean;
+  timestamp: string;
+}
+
+export interface GroupedDomain {
+  domain_id: string;
+  title: string;
+  jurisdiction: string;
+  icon: string;
+  impact_metric: string;
+  task_count: number;
+  earned_hours?: number;
+  verified_count?: number;
+  tasks: CivicTask[];
+}
+
+export interface UserTasksResponse {
+  user_id: string;
+  public_handle: string;
+  total_unique_tasks: number;
+  total_verified_tasks?: number;
+  citizens_safeguarded?: number;
+  tasks: CivicTask[];
+  grouped_domains: GroupedDomain[];
+}
+
+export interface CertificateData {
+  certificate_id: string;
+  verification_hash: string;
+  issued_at: string;
+  recipient: {
+    user_id: string;
+    name: string;
+    public_handle: string;
+    institution: string;
+    academic_year: string;
+  };
+  summary: {
+    total_tasks_completed: number;
+    total_verified_tasks?: number;
+    verified_civic_hours?: number;
+    citizens_safeguarded: number;
+    points_earned: number;
+    status: string;
+  };
+  domains: {
+    title: string;
+    jurisdiction: string;
+    task_count: number;
+    earned_hours?: number;
+    verified_count?: number;
+    impact_metric: string;
+    representative_tasks: string[];
+  }[];
+  authorities: {
+    title: string;
+    signatory: string;
+    designation: string;
+  }[];
+  verification_url: string;
+}
+
+export type ContributionKind = 'REPORT' | 'FIX' | 'VERIFICATION';
+
+export interface Contribution {
+  id: string;
+  kind: ContributionKind;
+  category: TicketCategory;
+  at: string;
 }
 
 export interface DemoPersona {

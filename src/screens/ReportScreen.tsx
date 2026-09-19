@@ -23,20 +23,22 @@ import {
   Edit3,
   ShieldAlert,
   ChevronDown,
+  X,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { TicketCategory } from '../types';
 
 const STANDARD_DEPARTMENTS = [
-  'Public Works Department (State PWD) - Arterial Road Division',
-  'Municipal Corporation (MCD) - Road Maintenance Division',
-  'National Highways Authority of India (NHAI)',
-  'MCD Department of Environment Management Services (DEMS - Sanitation)',
-  'Delhi Jal Board (DJB) / Municipal Drainage Division',
-  'Electricity Distribution Utility (BSES / Tata Power / MCD Electrical)',
-  'MCD Civil Engineering - Footpath & Pedestrian Division',
+  'Public Works Department (Punjab PWD) - Arterial Road Division',
+  'Municipal Corporation Ludhiana (MCL) - Road Maintenance Division',
+  'National Highways Authority of India (NHAI - Punjab Region)',
+  'MCL Sanitation & Solid Waste Management Division',
+  'Punjab Water Supply & Sewerage Board (PWSSB) / Municipal Drainage',
+  'Punjab State Power Corporation Limited (PSPCL) - Electrical Grid',
+  'MCL Civil Engineering - Footpath & Pedestrian Division',
 ];
 
 const CURATED_DEMO_SAMPLES = [
@@ -52,20 +54,25 @@ const CURATED_DEMO_SAMPLES = [
   },
   {
     label: 'Damaged Sodium Streetlight',
-    url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=1000&q=80',
+    url: 'https://images.unsplash.com/photo-1558387489-19f943d3c0d7?w=1000&q=80',
     category: 'STREETLIGHT',
   },
 ];
 
-export const ReportScreen: React.FC = () => {
-  const { currentUser, updatePoints } = useAuth();
+interface ReportScreenProps {
+  onClose?: () => void;
+  onSuccess?: () => void;
+}
+
+export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }) => {
+  const { currentUser, updatePoints, logContribution } = useAuth();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoKind, setPhotoKind] = useState<'local' | 'remote' | null>(null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number }>({
-    latitude: 28.6289,
-    longitude: 77.2065,
+    latitude: 30.8893,
+    longitude: 75.8490,
   });
-  const [locationLabel, setLocationLabel] = useState<string>('Ward 14 • Connaught Place, New Delhi');
+  const [locationLabel, setLocationLabel] = useState<string>('Ward 14 • Dugri Road, Ludhiana, Punjab');
 
   // AI Pre-Analysis States
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -107,7 +114,7 @@ export const ReportScreen: React.FC = () => {
           );
         }
       } catch {
-        setLocationLabel('Demo location: Ward 14 • Connaught Place, New Delhi');
+        setLocationLabel('Demo location: Ward 14 • Dugri Road, Ludhiana, Punjab');
       }
     })();
   }, []);
@@ -200,7 +207,7 @@ export const ReportScreen: React.FC = () => {
         photoUri,
         coords.latitude,
         coords.longitude,
-        'WARD_DELHI_14',
+        'WARD_LUDHIANA_14',
         currentUser.id,
         selectedDepartment,
         customTitle,
@@ -212,6 +219,16 @@ export const ReportScreen: React.FC = () => {
         `${String(res.category || analysisResult?.category || 'DEFECT').replace(/_/g, ' ')} · ${selectedDepartment.split('-')[0]} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
       );
       updatePoints(res?.escrow_points ?? 50);
+      logContribution({
+        id: String(res?.id ?? res?.ticket_id ?? `${Date.now()}`),
+        kind: 'REPORT',
+        category: (res?.category || analysisResult?.category || 'UNKNOWN') as TicketCategory,
+        at: new Date().toISOString(),
+      });
+
+      if (onSuccess) {
+        setTimeout(() => onSuccess(), 1800);
+      }
 
       timer.current = setTimeout(() => {
         setIsSuccess(false);
@@ -251,6 +268,12 @@ export const ReportScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
+        {onClose && (
+          <TouchableOpacity onPress={onClose} style={styles.closeBtnHeader} activeOpacity={0.7}>
+            <X size={16} color="#0F172A" />
+            <Text style={styles.closeBtnHeaderText}>Back to Feed</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.title}>Report Civic Hazard</Text>
         <Text style={styles.subtitle}>
           DeepSeek 4.1 Vision analyzes the photograph, maps it to the exact responsible government department, and requires your confirmation before publishing.
@@ -957,5 +980,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     lineHeight: 16,
+  },
+  closeBtnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  closeBtnHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
 });

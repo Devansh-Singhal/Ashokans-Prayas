@@ -73,9 +73,9 @@ async def test_register_minor_requires_consent(client):
         "/api/v1/tickets/report",
         files=photo(),
         data={
-            "latitude": "28.6",
-            "longitude": "77.2",
-            "ward_id": "WARD_DELHI_14",
+            "latitude": "30.8893",
+            "longitude": "75.8490",
+            "ward_id": "WARD_LUDHIANA_14",
             "reporter_id": minor_id,
         },
     )
@@ -97,9 +97,9 @@ async def test_ticket_creation_deepseek_mock(client):
         "/api/v1/tickets/report",
         files=photo("pothole.jpg"),
         data={
-            "latitude": "28.61",
-            "longitude": "77.21",
-            "ward_id": "WARD_DELHI_14",
+            "latitude": "30.8894",
+            "longitude": "75.8491",
+            "ward_id": "WARD_LUDHIANA_14",
             "reporter_id": uid,
         },
     )

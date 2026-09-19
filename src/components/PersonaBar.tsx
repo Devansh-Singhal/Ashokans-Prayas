@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useAuth, DEMO_PERSONAS } from '../context/AuthContext';
 import { Award, Info, X, ShieldCheck, UserCheck, Smartphone } from 'lucide-react-native';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 export const PersonaBar: React.FC = () => {
   const { currentPersona, switchPersona, currentUser } = useAuth();
@@ -25,6 +26,8 @@ export const PersonaBar: React.FC = () => {
             onPress={() => setShowExplainer(true)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Why demo personas"
           >
             <Info size={13} color="#38BDF8" />
           </TouchableOpacity>
@@ -87,7 +90,9 @@ export const PersonaBar: React.FC = () => {
               <TouchableOpacity
                 onPress={() => setShowExplainer(false)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityLabel="Close"
+                accessibilityRole="button"
+                accessibilityLabel="Close explainer"
+                style={styles.modalIconButton}
               >
                 <X size={18} color="#94A3B8" />
               </TouchableOpacity>
@@ -144,7 +149,8 @@ export const PersonaBar: React.FC = () => {
               style={styles.modalCloseButton}
               onPress={() => setShowExplainer(false)}
               activeOpacity={0.85}
-              accessibilityLabel="Close"
+              accessibilityRole="button"
+              accessibilityLabel="Close explainer"
             >
               <Text style={styles.modalCloseText}>Understood</Text>
             </TouchableOpacity>
@@ -182,10 +188,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
   },
   liveText: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#94A3B8',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
   },
   infoButton: {
     padding: 2,
@@ -201,9 +206,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   pointsText: {
+    ...TYPOGRAPHY.captionStrong,
+    ...NUMERIC,
     color: '#F8FAFC',
-    fontSize: 11,
-    fontWeight: '800',
   },
   scroll: {
     gap: 8,
@@ -227,24 +232,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarLetter: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
   },
   personaName: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#F8FAFC',
-    fontSize: 11,
-    fontWeight: '700',
   },
   personaNameActive: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#FFFFFF',
   },
   personaRole: {
+    ...TYPOGRAPHY.microFaint,
+    ...CAPS_LABEL,
     color: '#94A3B8',
-    fontSize: 9,
-    fontWeight: '500',
   },
   personaRoleActive: {
+    ...TYPOGRAPHY.microFaint,
+    ...CAPS_LABEL,
     color: 'rgba(255,255,255,0.85)',
   },
   modalBackdrop: {
@@ -280,15 +286,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  modalIconButton: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    ...TYPOGRAPHY.title,
     color: '#0F172A',
   },
   modalIntro: {
-    fontSize: 12,
+    ...TYPOGRAPHY.bodySm,
     color: '#64748B',
-    lineHeight: 18,
     marginBottom: 16,
   },
   personasOverview: {
@@ -310,32 +320,31 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   personaInit: {
-    fontSize: 12,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodySmStrong,
+    ...NUMERIC,
   },
   personaTextGroup: {
     flex: 1,
   },
   personaNameLabel: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...TYPOGRAPHY.bodyStrong,
     color: '#0F172A',
     marginBottom: 2,
   },
   personaDesc: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#64748B',
-    lineHeight: 16,
   },
   modalCloseButton: {
     backgroundColor: '#0F172A',
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
   },
   modalCloseText: {
+    ...TYPOGRAPHY.bodyStrong,
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
   },
 });

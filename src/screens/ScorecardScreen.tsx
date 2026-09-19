@@ -16,6 +16,7 @@ import {
   StreetlightDefectIcon,
   OpenDrainHazardIcon,
 } from '../components/CivicIcons';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 export const ScorecardScreen: React.FC = () => {
   const [scorecard, setScorecard] = useState<WardScorecard | null>(null);
@@ -27,7 +28,7 @@ export const ScorecardScreen: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getWardScorecard('WARD_DELHI_14');
+      const data = await api.getWardScorecard('WARD_LUDHIANA_14');
       setScorecard(data);
     } catch (err: any) {
       setError(err?.message || 'Failed to load scorecard');
@@ -35,7 +36,7 @@ export const ScorecardScreen: React.FC = () => {
       setLoading(false);
     }
     try {
-      const feed = await api.getWardFeed('WARD_DELHI_14', 1, 100);
+      const feed = await api.getWardFeed('WARD_LUDHIANA_14', 1, 100);
       setFeedTickets(feed.tickets);
     } catch {
       setFeedTickets(null);
@@ -101,7 +102,7 @@ export const ScorecardScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.header}>Ward 14 Accountability Scorecard</Text>
-      <Text style={styles.subHeader}>Central Delhi Municipal Corporation (MCD) Oversight</Text>
+      <Text style={styles.subHeader}>Ludhiana Municipal Corporation Oversight, Punjab</Text>
 
       {/* 1. Main Cleanliness Score Hero with Letter Grade */}
       <View style={styles.scoreHero}>
@@ -161,10 +162,10 @@ export const ScorecardScreen: React.FC = () => {
         <View style={styles.slaHeader}>
           <View style={styles.slaTitleGroup}>
             <Clock size={18} color="#0284C7" />
-            <Text style={styles.slaTitle}>Delhi MCD 48-Hour SLA Benchmark</Text>
+            <Text style={styles.slaTitle}>Ludhiana MC 48-Hour SLA Benchmark</Text>
           </View>
           <View style={styles.slaTargetBadge}>
-            <Text style={styles.slaTargetText}>MCD Target: 48h (2.0d)</Text>
+            <Text style={styles.slaTargetText}>MC Target: 48h (2.0d)</Text>
           </View>
         </View>
 
@@ -226,7 +227,7 @@ export const ScorecardScreen: React.FC = () => {
           <CheckCircle2 size={20} color="#059669" />
         </View>
         <View style={styles.calloutTextGroup}>
-          <Text style={styles.calloutTitle}>Help improve Ward 14&apos;s score</Text>
+          <Text style={styles.calloutTitle}>Help improve Ward 14 score</Text>
           <Text style={styles.calloutBody}>
             {pendingAudit !== null
               ? `${pendingAudit} contractor repair(s) pending civilian audit. Verify in the feed to release points and raise our index.`
@@ -258,13 +259,12 @@ const styles = StyleSheet.create({
     maxWidth: 340,
   },
   errorTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+    ...TYPOGRAPHY.subtitle,
     color: '#B91C1C',
     marginBottom: 4,
   },
   errorBody: {
-    fontSize: 12,
+    ...TYPOGRAPHY.bodySm,
     color: '#64748B',
     textAlign: 'center',
     marginBottom: 12,
@@ -274,23 +274,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   retryText: {
+    ...TYPOGRAPHY.bodySmStrong,
+    ...NUMERIC,
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
   },
   content: {
     padding: 16,
     paddingBottom: 130, // Safe mobile inset to prevent buttons clipping behind bottom tab bar
   },
   header: {
-    fontSize: 20,
-    fontWeight: '900',
+    ...TYPOGRAPHY.h1,
     color: '#0F172A',
   },
   subHeader: {
-    fontSize: 12,
+    ...TYPOGRAPHY.bodySm,
     color: '#64748B',
     marginTop: 2,
     marginBottom: 16,
@@ -308,15 +309,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scoreLabel: {
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#38BDF8',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.8,
   },
   scoreNumber: {
+    ...TYPOGRAPHY.hero,
+    ...NUMERIC,
     color: '#FFFFFF',
-    fontSize: 44,
-    fontWeight: '900',
     marginVertical: 2,
   },
   gradeBadge: {
@@ -327,13 +327,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   gradeLetter: {
-    fontSize: 24,
-    fontWeight: '900',
+    ...TYPOGRAPHY.h1,
+    ...NUMERIC,
   },
   gradeTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     marginTop: 2,
   },
   formulaCard: {
@@ -350,14 +349,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   formulaTitle: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#38BDF8',
-    fontSize: 11,
-    fontWeight: '700',
   },
   formulaText: {
+    ...TYPOGRAPHY.caption,
     color: '#94A3B8',
-    fontSize: 11,
-    lineHeight: 16,
   },
   mathBox: {
     backgroundColor: '#0F172A',
@@ -369,9 +366,9 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
   },
   mathEquation: {
+    ...TYPOGRAPHY.captionStrong,
+    ...NUMERIC,
     color: '#34D399',
-    fontSize: 11,
-    fontWeight: '700',
     textAlign: 'center',
   },
   grid: {
@@ -389,15 +386,15 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   gridNumber: {
-    fontSize: 20,
-    fontWeight: '800',
+    ...TYPOGRAPHY.h3,
+    ...NUMERIC,
     color: '#0F172A',
     marginVertical: 4,
   },
   gridLabel: {
-    fontSize: 10,
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#64748B',
-    fontWeight: '600',
   },
   slaCard: {
     backgroundColor: '#FFFFFF',
@@ -420,8 +417,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   slaTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodyStrong,
     color: '#0F172A',
   },
   slaTargetBadge: {
@@ -433,8 +429,8 @@ const styles = StyleSheet.create({
     borderColor: '#BAE6FD',
   },
   slaTargetText: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...TYPOGRAPHY.micro,
+    ...NUMERIC,
     color: '#0284C7',
   },
   slaComparisonRow: {
@@ -454,25 +450,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   slaMetricLabel: {
-    fontSize: 10,
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#64748B',
-    fontWeight: '600',
     marginBottom: 2,
   },
   slaMetricValue: {
-    fontSize: 16,
-    fontWeight: '800',
+    ...TYPOGRAPHY.title,
+    ...NUMERIC,
     color: '#0F172A',
   },
   slaMetricStatus: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...TYPOGRAPHY.bodySmStrong,
+    ...NUMERIC,
   },
   slaExplainer: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#64748B',
     marginTop: 10,
-    lineHeight: 16,
   },
   categoryCard: {
     backgroundColor: '#FFFFFF',
@@ -483,8 +478,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   categoryCardTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodyStrong,
     color: '#0F172A',
     marginBottom: 12,
   },
@@ -501,13 +495,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   catName: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#334155',
   },
   catPercent: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
+    ...NUMERIC,
     color: '#64748B',
   },
   progressBar: {
@@ -542,14 +535,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   calloutTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...TYPOGRAPHY.bodyStrong,
     color: '#15803D',
     marginBottom: 2,
   },
   calloutBody: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#166534',
-    lineHeight: 16,
   },
 });

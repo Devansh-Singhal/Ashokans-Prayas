@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { X, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react-native';
 import { StepSpotIcon, StepEscalateIcon, StepAuditIcon } from './CivicIcons';
+import { CAPS_LABEL, TYPOGRAPHY } from '../constants/typography';
 
 export const CivicOnboardingCard: React.FC = () => {
   // TODO: persist dismiss via AsyncStorage
@@ -19,7 +20,7 @@ export const CivicOnboardingCard: React.FC = () => {
           </View>
           <View>
             <Text style={styles.title}>How CivicFeed Works</Text>
-            <Text style={styles.subtitle}>Ward 14 Citizen Verification Network</Text>
+            <Text style={styles.subtitle}>Ward 14 Citizen Verification Network • Ludhiana, Punjab</Text>
           </View>
         </View>
 
@@ -28,6 +29,8 @@ export const CivicOnboardingCard: React.FC = () => {
             style={styles.iconButton}
             onPress={() => setIsCollapsed(!isCollapsed)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={isCollapsed ? 'Expand how CivicFeed works' : 'Collapse how CivicFeed works'}
           >
             {isCollapsed ? (
               <ChevronDown size={18} color="#94A3B8" />
@@ -40,6 +43,8 @@ export const CivicOnboardingCard: React.FC = () => {
             style={styles.iconButton}
             onPress={() => setIsDismissed(true)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss how CivicFeed works"
           >
             <X size={18} color="#94A3B8" />
           </TouchableOpacity>
@@ -56,12 +61,12 @@ export const CivicOnboardingCard: React.FC = () => {
             <View style={styles.stepContent}>
               <View style={styles.stepHeadingRow}>
                 <Text style={styles.stepNumber}>1. SPOT</Text>
-                <View style={styles.pointsPill}>
+                <View style={styles.pointsPill} accessible={true} accessibilityLabel="Earns 50 escrow points">
                   <Text style={styles.pointsPillText}>+50 pts</Text>
                 </View>
               </View>
               <Text style={styles.stepDesc}>
-                Photograph road hazards with GPS to notify the Municipal Corporation.
+                Photograph road hazards with GPS to notify the Ludhiana Municipal Corporation.
               </Text>
             </View>
           </View>
@@ -74,7 +79,7 @@ export const CivicOnboardingCard: React.FC = () => {
             <View style={styles.stepContent}>
               <View style={styles.stepHeadingRow}>
                 <Text style={styles.stepNumber}>2. FIX</Text>
-                <View style={styles.pointsPill}>
+                <View style={styles.pointsPill} accessible={true} accessibilityLabel="Repair photo uploaded by municipal crew">
                   <Text style={styles.pointsPillText}>crew upload</Text>
                 </View>
               </View>
@@ -92,7 +97,7 @@ export const CivicOnboardingCard: React.FC = () => {
             <View style={styles.stepContent}>
               <View style={styles.stepHeadingRow}>
                 <Text style={styles.stepNumber}>3. AUDIT</Text>
-                <View style={[styles.pointsPill, { backgroundColor: '#DCFCE7' }]}>
+                <View style={[styles.pointsPill, { backgroundColor: '#DCFCE7' }]} accessible={true} accessibilityLabel="Earns 150 audit points">
                   <Text style={[styles.pointsPillText, { color: '#15803D' }]}>+150 pts</Text>
                 </View>
               </View>
@@ -143,14 +148,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 14,
-    fontWeight: '800',
+    ...TYPOGRAPHY.subtitle,
     color: '#0F172A',
   },
   subtitle: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#64748B',
-    fontWeight: '500',
     marginTop: 1,
   },
   controls: {
@@ -197,10 +200,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   stepNumber: {
-    fontSize: 12,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodySmStrong,
+    ...CAPS_LABEL,
     color: '#0F172A',
-    letterSpacing: 0.5,
   },
   pointsPill: {
     backgroundColor: '#FEF3C7',
@@ -209,13 +211,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   pointsPillText: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...TYPOGRAPHY.micro,
     color: '#B45309',
   },
   stepDesc: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#475569',
-    lineHeight: 16,
   },
 });

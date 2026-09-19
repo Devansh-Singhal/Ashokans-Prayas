@@ -15,15 +15,15 @@ const mockTicket: Ticket = {
   severity: 4,
   status: 'PROVISIONAL_FIX',
   upvotes: 42,
-  latitude: 28.6289,
-  longitude: 77.2065,
+  latitude: 30.8785,
+  longitude: 75.8462,
   report_photo_url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7',
   resolution_photo_url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09',
   created_at: new Date().toISOString(),
 };
 
 // 1. Verify distance calculation from 30m away
-const userCoordsNear = { latitude: 28.62917, longitude: 77.2065 };
+const userCoordsNear = { latitude: 30.87877, longitude: 75.8462 };
 const distNear = calculateHaversineDistance(
   userCoordsNear.latitude,
   userCoordsNear.longitude,
@@ -34,7 +34,7 @@ assert(distNear <= 50, `Expected in-range (<=50m), got ${distNear}m`);
 console.log(`✅ Test 1: In-range auditor verified at ${distNear}m -> Audit button enabled`);
 
 // 2. Verify distance calculation from 120m away
-const userCoordsFar = { latitude: 28.6300, longitude: 77.2065 };
+const userCoordsFar = { latitude: 30.8796, longitude: 75.8462 };
 const distFar = calculateHaversineDistance(
   userCoordsFar.latitude,
   userCoordsFar.longitude,

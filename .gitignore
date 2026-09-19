@@ -26,8 +26,9 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS
+# macOS & editors
 .DS_Store
+.commandcode/
 *.pem
 
 # local env files
@@ -36,11 +37,33 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# archives
+*.zip
+
 example
 
 # generated native folders
 /ios
 /android
 
+# Next.js
+.next/
+out/
+
 # local scratch
 gemini implementation/
+legacy_scamshield/
+.git_backup/
+/*.docx
+/*.py
+/*.json
+!/package.json
+!/package-lock.json
+!/app.json
+!/tsconfig.json
+/*.md
+!/README.md
+!/AGENTS.md
+!/CLAUDE.md
+test_civic_images/
+verified_real_benchmark_images/

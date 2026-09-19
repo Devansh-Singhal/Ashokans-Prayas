@@ -38,7 +38,7 @@ async def seed():
         
         await session.flush()
 
-        # 2. Seed 6 Ward 14 (Delhi) tickets + 5 Ludhiana Dugri/Gill corridor
+        # 2. Seed 6 Ward 14 (Ludhiana) tickets + 5 Ludhiana Dugri/Gill corridor
         # case-study tickets. Corridor coords sit on/near Dugri Road per
         # OpenStreetMap (Nominatim): ~(30.8686, 75.8435) -> (30.8893, 75.8490).
         now = datetime.now(timezone.utc)
@@ -47,12 +47,12 @@ async def seed():
             {
                 "id": "ticket-pothole-1",
                 "reporter_id": "user-rahul-id",
-                "ward_id": "WARD_DELHI_14",
+                "ward_id": "WARD_LUDHIANA_14",
                 "category": "POTHOLE",
                 "severity": 4,
                 "status": TicketStatus.REPORTED.value,
-                "latitude": 28.6289,
-                "longitude": 77.2065,
+                "latitude": 30.8893,
+                "longitude": 75.8490,
                 "upvotes_count": 34,
                 # Deep asphalt road fracture on high-traffic urban corridor
                 "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",
@@ -61,12 +61,12 @@ async def seed():
             {
                 "id": "ticket-garbage-fix",
                 "reporter_id": "user-rahul-id",
-                "ward_id": "WARD_DELHI_14",
+                "ward_id": "WARD_LUDHIANA_14",
                 "category": "GARBAGE_ACCUMULATION",
                 "severity": 3,
                 "status": TicketStatus.PROVISIONAL_FIX.value,
-                "latitude": 28.6290,
-                "longitude": 77.2066,
+                "latitude": 30.8894,
+                "longitude": 75.8491,
                 "upvotes_count": 18,
                 # Municipal street waste heap before, and freshly swept curb after
                 "report_photo_url": "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=1200&q=80",
@@ -76,26 +76,26 @@ async def seed():
             {
                 "id": "ticket-streetlight-3",
                 "reporter_id": "user-anjali-id",
-                "ward_id": "WARD_DELHI_14",
+                "ward_id": "WARD_LUDHIANA_14",
                 "category": "STREETLIGHT",
                 "severity": 2,
                 "status": TicketStatus.REPORTED.value,
-                "latitude": 28.6275,
-                "longitude": 77.2050,
+                "latitude": 30.8879,
+                "longitude": 75.8475,
                 "upvotes_count": 12,
-                # Defunct municipal street light fixture
-                "report_photo_url": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=1200&q=80",
+                # Verified municipal street light fixture
+                "report_photo_url": "https://images.unsplash.com/photo-1558387489-19f943d3c0d7?w=1200&q=80",
                 "created_at": now - timedelta(hours=14)
             },
             {
                 "id": "ticket-drain-flooded",
                 "reporter_id": "user-rohan-id",
-                "ward_id": "WARD_DELHI_14",
+                "ward_id": "WARD_LUDHIANA_14",
                 "category": "POTHOLE",
                 "severity": 4,
                 "status": TicketStatus.WEATHER_OCCLUDED.value,
-                "latitude": 28.6310,
-                "longitude": 77.2085,
+                "latitude": 30.8914,
+                "longitude": 75.8510,
                 "upvotes_count": 27,
                 # Waterlogged asphalt road completely submerged during monsoon
                 "report_photo_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&q=80",
@@ -104,12 +104,12 @@ async def seed():
             {
                 "id": "ticket-manhole-hazard",
                 "reporter_id": "user-anjali-id",
-                "ward_id": "WARD_DELHI_14",
+                "ward_id": "WARD_LUDHIANA_14",
                 "category": "OPEN_DRAIN",
                 "severity": 5,
                 "status": TicketStatus.REPORTED.value,
-                "latitude": 28.6268,
-                "longitude": 77.2040,
+                "latitude": 30.8872,
+                "longitude": 75.8465,
                 "upvotes_count": 48,
                 # Uncovered roadside concrete drainage slab ditch
                 "report_photo_url": "https://images.unsplash.com/photo-1584467735815-f778f274e296?w=1200&q=80",
@@ -118,12 +118,12 @@ async def seed():
             {
                 "id": "ticket-resolved-road",
                 "reporter_id": "user-rahul-id",
-                "ward_id": "WARD_DELHI_14",
+                "ward_id": "WARD_LUDHIANA_14",
                 "category": "POTHOLE",
                 "severity": 3,
                 "status": TicketStatus.RESOLVED.value,
-                "latitude": 28.6280,
-                "longitude": 77.2060,
+                "latitude": 30.8884,
+                "longitude": 75.8485,
                 "upvotes_count": 56,
                 # Pothole before, and rolled asphalt patch after
                 "report_photo_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&q=80",
@@ -214,7 +214,7 @@ async def seed():
                     setattr(existing, k, v)
                 
         await session.commit()
-        print("Demo personas, 6 Ward 14 tickets, and 5 Ludhiana Dugri/Gill case-study tickets seeded!")
+        print("Demo personas, 6 Ward 14 (Ludhiana) tickets, and 5 Ludhiana Dugri/Gill case-study tickets seeded!")
 
 if __name__ == "__main__":
     asyncio.run(seed())
