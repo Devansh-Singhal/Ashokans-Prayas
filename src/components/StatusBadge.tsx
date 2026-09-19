@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { TicketStatus } from '../types';
+import { TYPOGRAPHY } from '../constants/typography';
 
 interface Props {
   status: TicketStatus;
@@ -83,8 +84,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   label: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    ...TYPOGRAPHY.captionStrong,
   },
 });

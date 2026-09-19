@@ -1,31 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { MapPin, Navigation, ShieldCheck } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Image,
-  ScrollView,
-  useWindowDimensions,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { MapPin, Navigation, ExternalLink, ShieldCheck } from 'lucide-react-native';
-import { Ticket, TicketStatus } from '../types';
-import { api } from '../services/api';
+import {
+  OpenDrainHazardIcon,
+  PotholeDefectIcon,
+  StreetlightDefectIcon,
+  WasteAccumulationIcon,
+} from '../components/CivicIcons';
+import { SeverityMeter } from '../components/SeverityMeter';
 import { ShowMap } from '../components/showMap';
 import { StatusBadge } from '../components/StatusBadge';
-import { SeverityMeter } from '../components/SeverityMeter';
+import { api } from '../services/api';
 import { calculateHaversineDistance, getCurrentGPS, WARD_14_LUDHIANA } from '../services/location';
-import {
-  PotholeDefectIcon,
-  WasteAccumulationIcon,
-  StreetlightDefectIcon,
-  OpenDrainHazardIcon,
-} from '../components/CivicIcons';
+import { Ticket } from '../types';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 type FilterType = 'ALL' | 'REPORTED' | 'PROVISIONAL_FIX' | 'RESOLVED' | 'WEATHER_OCCLUDED';
 
-const WARD_AREA = {
+const ward = {
   wardId: WARD_14_LUDHIANA.wardId,
   fallbackLabel: 'Demo location — enable GPS for live audit',
   emptyPlace: WARD_14_LUDHIANA.shortLabel,
@@ -41,8 +41,6 @@ const WARD_AREA = {
 } as const;
 
 export const MapScreen: React.FC = () => {
-  const { width } = useWindowDimensions();
-  const ward = WARD_AREA;
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
@@ -52,6 +50,20 @@ export const MapScreen: React.FC = () => {
   });
   const [usingFallback, setUsingFallback] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadTickets = async () => {
+    try {
+      setLoadError(null);
+      const res = await api.getWardFeed(ward.wardId);
+      setTickets(res.tickets);
+      if (res.tickets.length > 0) {
+        setSelectedTicket(res.tickets[0]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load tickets for map', err);
+      setLoadError(err?.message || 'Failed to load tickets');
+    }
+  };
 
   useEffect(() => {
     setSelectedTicket(null);
@@ -69,20 +81,6 @@ export const MapScreen: React.FC = () => {
       }
     })();
   }, []);
-
-  const loadTickets = async () => {
-    try {
-      setLoadError(null);
-      const res = await api.getWardFeed(ward.wardId);
-      setTickets(res.tickets);
-      if (res.tickets.length > 0) {
-        setSelectedTicket(res.tickets[0]);
-      }
-    } catch (err: any) {
-      console.error('Failed to load tickets for map', err);
-      setLoadError(err?.message || 'Failed to load tickets');
-    }
-  };
 
   const filteredTickets = useMemo(() => {
     if (activeFilter === 'ALL') return tickets;
@@ -119,11 +117,11 @@ export const MapScreen: React.FC = () => {
 
   const selectedDistance = selectedTicket
     ? calculateHaversineDistance(
-        userCoords.latitude,
-        userCoords.longitude,
-        selectedTicket.latitude,
-        selectedTicket.longitude
-      )
+      userCoords.latitude,
+      userCoords.longitude,
+      selectedTicket.latitude,
+      selectedTicket.longitude
+    )
     : null;
 
   return (
@@ -139,6 +137,9 @@ export const MapScreen: React.FC = () => {
             style={[styles.filterChip, activeFilter === 'ALL' && styles.filterChipActive]}
             onPress={() => setActiveFilter('ALL')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show all tickets"
+            accessibilityState={{ selected: activeFilter === 'ALL' }}
           >
             <Text
               style={[
@@ -154,6 +155,9 @@ export const MapScreen: React.FC = () => {
             style={[styles.filterChip, activeFilter === 'REPORTED' && styles.filterChipActive]}
             onPress={() => setActiveFilter('REPORTED')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show open tickets"
+            accessibilityState={{ selected: activeFilter === 'REPORTED' }}
           >
             <View style={[styles.filterDot, { backgroundColor: '#EF4444' }]} />
             <Text
@@ -173,6 +177,9 @@ export const MapScreen: React.FC = () => {
             ]}
             onPress={() => setActiveFilter('PROVISIONAL_FIX')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show tickets with fix uploaded"
+            accessibilityState={{ selected: activeFilter === 'PROVISIONAL_FIX' }}
           >
             <View style={[styles.filterDot, { backgroundColor: '#F59E0B' }]} />
             <Text
@@ -189,6 +196,9 @@ export const MapScreen: React.FC = () => {
             style={[styles.filterChip, activeFilter === 'RESOLVED' && styles.filterChipActive]}
             onPress={() => setActiveFilter('RESOLVED')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show verified tickets"
+            accessibilityState={{ selected: activeFilter === 'RESOLVED' }}
           >
             <View style={[styles.filterDot, { backgroundColor: '#10B981' }]} />
             <Text
@@ -205,6 +215,9 @@ export const MapScreen: React.FC = () => {
             style={[styles.filterChip, activeFilter === 'WEATHER_OCCLUDED' && styles.filterChipActive]}
             onPress={() => setActiveFilter('WEATHER_OCCLUDED')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Show submerged tickets"
+            accessibilityState={{ selected: activeFilter === 'WEATHER_OCCLUDED' }}
           >
             <View style={[styles.filterDot, { backgroundColor: '#38BDF8' }]} />
             <Text
@@ -226,7 +239,13 @@ export const MapScreen: React.FC = () => {
         </View>
       )}
       {tickets.length === 0 && loadError && (
-        <TouchableOpacity style={styles.retryBanner} onPress={loadTickets} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.retryBanner}
+          onPress={loadTickets}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading map tickets"
+        >
           <Text style={styles.retryBannerText}>Could not load map tickets. Tap to retry.</Text>
         </TouchableOpacity>
       )}
@@ -328,18 +347,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 9999,
-    minHeight: 36,
+    minHeight: 44,
   },
   filterChipActive: {
     backgroundColor: '#0284C7',
     borderColor: '#38BDF8',
   },
   filterChipText: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#94A3B8',
-    fontSize: 12,
-    fontWeight: '700',
   },
   filterChipTextActive: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#FFFFFF',
   },
   filterDot: {
@@ -393,9 +412,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   drawerCategoryText: {
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#F8FAFC',
-    fontSize: 12,
-    fontWeight: '700',
   },
   drawerContentRow: {
     flexDirection: 'row',
@@ -422,9 +441,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   drawerMetaLabel: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '600',
   },
   distanceRow: {
     flexDirection: 'row',
@@ -432,9 +450,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   distanceText: {
+    ...TYPOGRAPHY.caption,
+    ...NUMERIC,
     color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '600',
   },
   actionRow: {
     flexDirection: 'row',
@@ -451,9 +469,8 @@ const styles = StyleSheet.create({
     borderColor: '#10B981',
   },
   auditPromptText: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#A7F3D0',
-    fontSize: 11,
-    fontWeight: '700',
   },
   fallbackBanner: {
     backgroundColor: '#FEF3C7',
@@ -461,8 +478,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   fallbackText: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#92400E',
     textAlign: 'center',
   },
@@ -474,8 +491,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#334155',
   },
   retryBannerText: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
     color: '#38BDF8',
     textAlign: 'center',
   },

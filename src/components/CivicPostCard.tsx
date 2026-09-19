@@ -19,6 +19,7 @@ import { StatusBadge } from './StatusBadge';
 import { BeforeAfterView } from './BeforeAfterView';
 import { GeofencePill } from './GeofencePill';
 import { calculateHaversineDistance } from '../services/location';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 import {
   MonsoonPauseIcon,
   PotholeDefectIcon,
@@ -70,9 +71,13 @@ export const CivicPostCard: React.FC<Props> = ({
     }
   };
 
+  // Captured once at mount: reading the clock during render is impure and
+  // makes the React Compiler's memoization unstable.
+  const [nowMs] = React.useState(() => Date.now());
+
   const formatTimeAgo = (dateStr: string) => {
     try {
-      const diffSec = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+      const diffSec = Math.floor((nowMs - new Date(dateStr).getTime()) / 1000);
       if (diffSec < 60) return 'Just now';
       if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
       if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
@@ -85,7 +90,7 @@ export const CivicPostCard: React.FC<Props> = ({
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `[CivicFeed Alert] ${ticket.category} (Severity ${ticket.severity}/5) at ${ticket.ward_id || 'Ward 14 Ludhiana'}. Status: ${ticket.status}. Verify and track: ashokansprayas://ticket/${ticket.id}`,
+        message: `[CivicFeed Alert] ${ticket.category} (Severity ${ticket.severity}/5) at ${ticket.ward_id || 'Ward 14, Ludhiana, Punjab'}. Status: ${ticket.status}. Verify and track: ashokansprayas://ticket/${ticket.id}`,
       });
     } catch {
       // dismissed
@@ -128,7 +133,7 @@ export const CivicPostCard: React.FC<Props> = ({
       <View style={styles.locationRow}>
         <MapPin size={13} color="#64748B" />
         <Text style={styles.locationText} numberOfLines={1}>
-          {ticket.latitude.toFixed(4)}, {ticket.longitude.toFixed(4)} • Near Dugri Road, Ludhiana
+          {ticket.latitude.toFixed(4)}, {ticket.longitude.toFixed(4)} • Near Dugri–Gill Road Corridor, Ludhiana
         </Text>
       </View>
 
@@ -175,10 +180,12 @@ export const CivicPostCard: React.FC<Props> = ({
               onPress={() => onVerifyPress(ticket)}
               disabled={distance > 50}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: distance > 50 }}
             >
-              <ShieldCheck size={16} color="#FFFFFF" />
-              <Text style={styles.verifyButtonText}>
-                {distance <= 50 ? 'Audit Fix (+150p)' : 'Move Within 50m'}
+              <ShieldCheck size={16} color={distance <= 50 ? '#0B1B2F' : '#FFFFFF'} />
+              <Text style={[styles.verifyButtonText, distance > 50 && { color: '#FFFFFF' }]}>
+                {distance <= 50 ? 'Audit fix (+150 pts)' : 'Move within 50m'}
               </Text>
             </TouchableOpacity>
           ) : ticket.status === 'WEATHER_OCCLUDED' ? (
@@ -198,7 +205,14 @@ export const CivicPostCard: React.FC<Props> = ({
             )
           )}
 
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={handleShare}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Share ${ticket.category.replace(/_/g, ' ')} report`}
+            accessibilityHint="Opens the share sheet with ticket details"
+          >
             <Share2 size={16} color="#64748B" />
           </TouchableOpacity>
         </View>
@@ -214,13 +228,13 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 8,
-    shadowColor: '#0F172A',
+    shadowColor: '#0B1B2F',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: '#E6EAF0',
   },
   headerRow: {
     flexDirection: 'row',
@@ -244,8 +258,7 @@ const styles = StyleSheet.create({
     borderColor: '#C7D2FE',
   },
   avatarInitial: {
-    fontSize: 14,
-    fontWeight: '800',
+    ...TYPOGRAPHY.subtitle,
     color: '#4F46E5',
   },
   nameAndWard: {
@@ -254,24 +267,24 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   authorHandle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...TYPOGRAPHY.bodyStrong,
+    color: '#0B1B2F',
   },
   wardBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#E6EAF0',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
   },
   wardText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#64748B',
+    ...TYPOGRAPHY.micro,
+    ...NUMERIC,
+    color: '#3D4E65',
   },
   timestamp: {
-    fontSize: 11,
-    color: '#64748B',
+    ...TYPOGRAPHY.caption,
+    ...NUMERIC,
+    color: '#3D4E65',
     marginTop: 1,
   },
   metaRow: {
@@ -292,10 +305,9 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   categoryText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#334155',
-    textTransform: 'capitalize',
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
+    color: '#0B1B2F',
   },
   locationRow: {
     flexDirection: 'row',
@@ -304,7 +316,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   locationText: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
+    ...NUMERIC,
     color: '#64748B',
     flex: 1,
   },
@@ -335,9 +348,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#38BDF8',
   },
   weatherBannerText: {
+    ...TYPOGRAPHY.captionStrong,
     color: '#E0F2FE',
-    fontSize: 11,
-    fontWeight: '600',
     flex: 1,
   },
   geofenceContainer: {
@@ -347,7 +359,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: '#E6EAF0',
     gap: 10,
   },
   secondaryActions: {
@@ -365,18 +377,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    minHeight: 46,
+    minHeight: 48,
   },
   verifyButtonActive: {
-    backgroundColor: '#059669',
+    backgroundColor: '#FF7A00',
   },
   verifyButtonDisabled: {
-    backgroundColor: '#94A3B8',
+    backgroundColor: '#6B7A90',
   },
   verifyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodySmStrong,
+    ...NUMERIC,
+    color: '#0B1B2F',
   },
   resolvedBadge: {
     flexDirection: 'row',
@@ -390,9 +402,8 @@ const styles = StyleSheet.create({
     borderColor: '#BBF7D0',
   },
   resolvedText: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#16A34A',
-    fontSize: 12,
-    fontWeight: '700',
   },
   occludedPill: {
     flexDirection: 'row',
@@ -406,9 +417,8 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   occludedText: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#64748B',
-    fontSize: 12,
-    fontWeight: '700',
   },
   shareButton: {
     width: 44,

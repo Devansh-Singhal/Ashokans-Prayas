@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { ShieldAlert, Users, TrendingDown, CheckCircle2 } from 'lucide-react-native';
 import { VerificationResult } from '../types';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 interface Props {
   visible: boolean;
@@ -91,13 +92,18 @@ export const AntiCheatModal: React.FC<Props> = ({ visible, result, onClose }) =>
 
           <Text style={styles.explanation}>
             {isCollusion
-              ? 'Formula: 150 × (1 / [1 + prior_pairings]) × evidence_weight. First audit of a pair is pairing #1 (prior 0). This mathematical decay ensures college cartels cannot farm hours or certificates.'
+              ? 'Formula: 150 × (1 / [1 + prior_pairings]) × evidence_weight. First audit of a pair is pairing #1 (prior 0). This mathematical decay stops point farming between repeat pairs.'
               : 'Ticket marked RESOLVED on the public ward timeline.'}
           </Text>
 
-          <TouchableOpacity style={styles.button} onPress={onClose}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel={isCollusion ? 'Acknowledge and continue' : 'Return to feed'}
+          >
             <Text style={styles.buttonText}>
-              {isCollusion ? 'Acknowledge & Continue' : 'Awesome, Return to Feed'}
+              {isCollusion ? 'Acknowledge and continue' : 'Return to feed'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -136,17 +142,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '800',
+    ...TYPOGRAPHY.modalTitle,
     color: '#0F172A',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
+    ...TYPOGRAPHY.body,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 18,
     marginBottom: 16,
   },
   pointsBox: {
@@ -165,12 +169,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   pointLabel: {
-    fontSize: 13,
+    ...TYPOGRAPHY.body,
     color: '#64748B',
   },
   pointOldValue: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...TYPOGRAPHY.bodyStrong,
+    ...NUMERIC,
     color: '#94A3B8',
     textDecorationLine: 'line-through',
   },
@@ -188,8 +192,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   decayText: {
-    fontSize: 11,
-    fontWeight: '800',
+    ...TYPOGRAPHY.captionStrong,
+    ...NUMERIC,
     color: '#DC2626',
   },
   finalRow: {
@@ -200,13 +204,12 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   pointLabelFinal: {
-    fontSize: 14,
-    fontWeight: '700',
+    ...TYPOGRAPHY.subtitle,
     color: '#0F172A',
   },
   pointFinalValue: {
-    fontSize: 18,
-    fontWeight: '900',
+    ...TYPOGRAPHY.modalTitle,
+    ...NUMERIC,
   },
   telemetryBox: {
     flexDirection: 'row',
@@ -220,14 +223,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   telemetryText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.bodySm,
+    ...NUMERIC,
     color: '#334155',
   },
   explanation: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#94A3B8',
     textAlign: 'center',
-    lineHeight: 15,
     marginBottom: 20,
   },
   button: {
@@ -238,8 +241,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
+    ...TYPOGRAPHY.subtitle,
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

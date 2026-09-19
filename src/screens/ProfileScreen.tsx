@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, Award, FileText, CheckCircle2 } from 'lucide-react-native';
+import { ShieldCheck, Award, FileText } from 'lucide-react-native';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 export const ProfileScreen: React.FC = () => {
   const { currentUser, currentPersona } = useAuth();
@@ -38,7 +39,7 @@ export const ProfileScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Points & NSS Hours Card */}
+      {/* Points Card */}
       <View style={styles.statCard}>
         <View style={styles.statRow}>
           <View>
@@ -46,23 +47,6 @@ export const ProfileScreen: React.FC = () => {
             <Text style={styles.statValue}>{currentUser.points_balance} pts</Text>
           </View>
           <Award size={32} color="#F59E0B" />
-        </View>
-
-        <View style={styles.progressDivider} />
-
-        <View style={styles.hoursRow}>
-          <Text style={styles.hoursTitle}>NSS Civic Audit Hours (device estimate)</Text>
-          <Text style={styles.hoursValue}>
-            {currentUser.verified_hours || 12} / 40 hrs
-          </Text>
-        </View>
-        <View style={styles.progressBarBg}>
-          <View
-            style={[
-              styles.progressBarFill,
-              { width: `${Math.min(100, ((currentUser.verified_hours || 12) / 40) * 100)}%` },
-            ]}
-          />
         </View>
       </View>
 
@@ -72,7 +56,7 @@ export const ProfileScreen: React.FC = () => {
         <View style={{ flex: 1 }}>
           <Text style={styles.certTitle}>Open-Data Infrastructure Credential</Text>
           <Text style={styles.certText}>
-            Points translate into verified civic service hours co-signed with partner youth clubs. Points and hours sync from the server ward ledger. Exportable service summary coming soon.
+            Points are verified civic contributions synced from the server ward ledger. Exportable service summary coming soon.
           </Text>
         </View>
       </View>
@@ -107,17 +91,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   avatarBigLetter: {
+    ...TYPOGRAPHY.h3,
     color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '800',
   },
   handle: {
-    fontSize: 18,
-    fontWeight: '900',
+    ...TYPOGRAPHY.h4,
+    ...NUMERIC,
     color: '#0F172A',
   },
   role: {
-    fontSize: 12,
+    ...TYPOGRAPHY.bodySm,
     color: '#64748B',
     marginTop: 2,
   },
@@ -132,9 +115,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   verifiedText: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
     color: '#15803D',
-    fontSize: 10,
-    fontWeight: '700',
   },
   statCard: {
     backgroundColor: '#FFFFFF',
@@ -150,46 +133,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 12,
+    ...TYPOGRAPHY.bodySm,
     color: '#64748B',
-    fontWeight: '600',
   },
   statValue: {
-    fontSize: 28,
-    fontWeight: '900',
+    ...TYPOGRAPHY.stat,
+    ...NUMERIC,
     color: '#0F172A',
     marginTop: 2,
-  },
-  progressDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 14,
-  },
-  hoursRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  hoursTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  hoursValue: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#2563EB',
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#2563EB',
-    borderRadius: 4,
   },
   certCard: {
     flexDirection: 'row',
@@ -201,14 +152,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   certTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodyStrong,
     color: '#1E40AF',
     marginBottom: 2,
   },
   certText: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     color: '#1D4ED8',
-    lineHeight: 16,
   },
 });

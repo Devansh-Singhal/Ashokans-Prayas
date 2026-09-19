@@ -16,6 +16,7 @@ import { Ticket, TicketCategory, VerificationResult } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentGPS } from '../services/location';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 import { Sparkles } from 'lucide-react-native';
 
 export const FeedScreen: React.FC = () => {
@@ -135,6 +136,9 @@ export const FeedScreen: React.FC = () => {
               <TouchableOpacity
                 style={[styles.filterPill, isActive && styles.filterPillActive]}
                 onPress={() => setActiveCategory(item.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${item.label}`}
+                accessibilityState={{ selected: isActive }}
               >
                 <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
                   {item.label}
@@ -148,8 +152,8 @@ export const FeedScreen: React.FC = () => {
       {/* Social Post Feed with Embedded Onboarding Header */}
       {isLoading ? (
         <View style={styles.loadingCenter}>
-          <ActivityIndicator size="large" color="#0F172A" />
-          <Text style={styles.loadingText}>Loading Ward 14 (Ludhiana) Feed...</Text>
+          <ActivityIndicator size="large" color="#0B1B2F" />
+          <Text style={styles.loadingText}>Loading Ward 14 social feed</Text>
         </View>
       ) : (
         <FlatList
@@ -169,12 +173,18 @@ export const FeedScreen: React.FC = () => {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Sparkles size={40} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>Ward 14 (Ludhiana) is Spotless!</Text>
+              <Text style={styles.emptyTitle}>Ward 14 is spotless</Text>
               <Text style={styles.emptySubtitle}>
                 {loadError ? `Could not load feed: ${loadError}` : 'No open issues reported in this category.'}
               </Text>
               {loadError && (
-                <TouchableOpacity style={styles.retryBtn} onPress={fetchFeed} activeOpacity={0.8}>
+                <TouchableOpacity
+                  style={styles.retryBtn}
+                  onPress={fetchFeed}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading feed"
+                >
                   <Text style={styles.retryText}>Retry</Text>
                 </TouchableOpacity>
               )}
@@ -196,13 +206,13 @@ export const FeedScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FAF7F2',
   },
   filterBar: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E6EAF0',
   },
   filterList: {
     paddingHorizontal: 16,
@@ -212,17 +222,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#E6EAF0',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   filterPillActive: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0B1B2F',
   },
   filterText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
+    ...TYPOGRAPHY.bodySmStrong,
+    color: '#3D4E65',
   },
   filterTextActive: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#FFFFFF',
   },
   listContent: {
@@ -234,10 +246,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
+    ...TYPOGRAPHY.body,
+    color: '#3D4E65',
     marginTop: 12,
-    color: '#64748B',
-    fontSize: 13,
-    fontWeight: '600',
   },
   emptyState: {
     paddingTop: 60,
@@ -245,14 +256,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...TYPOGRAPHY.title,
+    color: '#0B1B2F',
     marginTop: 12,
   },
   emptySubtitle: {
-    fontSize: 13,
-    color: '#64748B',
+    ...TYPOGRAPHY.body,
+    color: '#3D4E65',
     textAlign: 'center',
     marginTop: 4,
   },
@@ -264,21 +274,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   fallbackText: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...TYPOGRAPHY.captionStrong,
+    ...CAPS_LABEL,
     color: '#92400E',
     textAlign: 'center',
   },
   retryBtn: {
     marginTop: 12,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FF7A00',
     paddingHorizontal: 18,
     paddingVertical: 9,
     borderRadius: 10,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   retryText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
+    ...TYPOGRAPHY.bodySmStrong,
+    ...NUMERIC,
+    color: '#0B1B2F',
   },
 });

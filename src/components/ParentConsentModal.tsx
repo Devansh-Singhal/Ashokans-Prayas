@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ShieldCheck, Smartphone, CheckCircle } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
+import { NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 export const ParentConsentModal: React.FC = () => {
   const { isParentConsentModalVisible, setParentConsentModalVisible, simulateParentApproval, currentUser } = useAuth();
@@ -43,7 +44,8 @@ export const ParentConsentModal: React.FC = () => {
           </View>
 
           <Text style={styles.notice}>
-            "Your child requested permission to participate in accredited school civic infrastructure auditing with CivicFeed."
+            &ldquo;Your child requested permission to participate in accredited school civic
+            infrastructure auditing with CivicFeed.&rdquo;
           </Text>
 
           <TouchableOpacity style={styles.approveButton} onPress={handleSimulate} disabled={isApproving}>
@@ -95,16 +97,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '800',
+    ...TYPOGRAPHY.modalTitle,
     color: '#0F172A',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
+    ...TYPOGRAPHY.body,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 18,
     marginBottom: 12,
   },
   phoneBox: {
@@ -115,17 +115,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   phoneText: {
-    fontSize: 14,
-    fontWeight: '800',
+    ...TYPOGRAPHY.subtitle,
+    ...NUMERIC,
     color: '#0F172A',
   },
   notice: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     fontStyle: 'italic',
     color: '#64748B',
     textAlign: 'center',
     marginBottom: 20,
-    lineHeight: 16,
   },
   approveButton: {
     flexDirection: 'row',
@@ -140,16 +139,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   approveButtonText: {
+    ...TYPOGRAPHY.bodyStrong,
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
   },
   cancelButton: {
     paddingVertical: 6,
   },
   cancelButtonText: {
+    ...TYPOGRAPHY.bodySmStrong,
     color: '#94A3B8',
-    fontSize: 12,
-    fontWeight: '600',
   },
 });

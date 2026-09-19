@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MapPin, CheckCircle2, AlertTriangle } from 'lucide-react-native';
 import { formatDistance } from '../services/location';
+import { NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 interface Props {
   distanceMeters: number;
@@ -48,8 +49,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   text: {
-    fontSize: 11,
-    fontWeight: '600',
+    ...TYPOGRAPHY.captionStrong,
+    ...NUMERIC,
   },
   textInRange: {
     color: '#065F46',

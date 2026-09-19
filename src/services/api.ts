@@ -6,9 +6,10 @@ export const WARD_14 = 'WARD_LUDHIANA_14';
 export const WARD_LUDHIANA_14 = 'WARD_LUDHIANA_14';
 export const WARD_DELHI_14 = 'WARD_LUDHIANA_14'; // Backwards compatibility alias
 
-// Safe loader for expo-file-system File class:
-// In React Native / Expo Hermes: `require('expo-file-system').File` loads the native File class.
-// In Node.js / test environments (tsx): safe dynamic require prevents React Native Flow transform errors.
+// Safe loaders for React Native / Expo-only modules:
+// In React Native / Expo Hermes: these resolve to the real native implementations.
+// In Node.js / test environments (tsx): dynamic require + a plain fallback prevent
+// React Native Flow transform / native-module errors from crashing the test suite.
 let ExpoFile: any = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -16,6 +17,17 @@ try {
   ExpoFile = FileSystem.File;
 } catch {
   // Pure Node.js / test environment where expo-file-system native module is unavailable
+}
+
+let expoFetch: typeof fetch = fetch;
+let PlatformOS: string = typeof window === 'undefined' ? 'node' : 'web';
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  expoFetch = require('expo/fetch').fetch;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  PlatformOS = require('react-native').Platform.OS ?? PlatformOS;
+} catch {
+  // Pure Node.js / test environment where Expo/React Native native modules are unavailable
 }
 
 export { ExpoFile };
@@ -46,17 +58,21 @@ const DUMMY_JPEG = new Uint8Array([
 /**
  * Appends a photo to FormData using modern standard Blobs / Files.
  *
- * NOTE: The error `[Error: Unsupported FormDataPart implementation]` happens in
- * React Native / Expo (Hermes) because React Native's modern fetch engine rejects
- * legacy `{ uri, name, type }` objects appended to FormData.
+ * NOTE: The error `[Error: Unsupported FormDataPart implementation]` happens because
+ * Expo's `expo/fetch` engine only accepts FormData parts that are strings, real Blob
+ * instances, or objects with a `.bytes()` method — the legacy `{ uri, name, type }`
+ * object (and fetching a `file://` URI, which is unreliable on-device) are rejected.
  *
- * Strategy 1: Attempt to fetch the local/remote URI directly (`fetch(photoUri)` -> `res.blob()`).
- * Strategy 2: Fallback for native file URIs (`file://`, `content://`, `ph://`), using ExpoFile
- *             (`new ExpoFile(photoUri).bytes()`) to construct a standard Blob.
- * Strategy 3: Construct a valid standard Blob for test/Node environments or offline fallbacks.
+ * Strategy 1: Native local file (camera / gallery pick, `file://` / `content://` / `ph://`):
+ *             hand the expo-file-system `File` instance (a Blob subclass) directly to
+ *             FormData — the only form Expo's fetch engine accepts for local files.
+ * Strategy 2: Remote/http(s) URI (web browser or Node test environment): fetch it
+ *             directly and append the resulting Blob.
+ * Strategy 3: Last-resort fallback (offline demo / unreadable file) — append a tiny
+ *             valid dummy JPEG so the request is never blocked entirely.
  *
- * CRITICAL: NEVER fall back to `{ uri, name, type } as any` because that is the exact object format
- * that triggers `[Error: Unsupported FormDataPart implementation]`.
+ * CRITICAL: NEVER fall back to `{ uri, name, type } as any` — that is the exact object
+ * shape that triggers `[Error: Unsupported FormDataPart implementation]`.
  */
 export async function appendPhotoToFormData(
   formData: FormData,
@@ -73,49 +89,40 @@ export async function appendPhotoToFormData(
     ? `image/${match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase()}`
     : 'image/jpeg';
 
-  // Strategy 1: First, attempt to fetch the local/remote URI directly
-  try {
-    const res = await fetch(photoUri);
-    const blob = await res.blob();
-    if (blob) {
-      if (typeof File !== 'undefined') {
-        const file = new File([blob], filename, { type: mimeType });
-        formData.append(fieldName, file);
-      } else {
-        (blob as any).name = filename;
-        formData.append(fieldName, blob, filename);
-      }
-      return;
-    }
-  } catch {
-    // Strategy 1 failed (e.g. native file:// URL in certain fetch engines), proceed to Strategy 2
-  }
-
-  // Strategy 2: Fallback for native file URIs (file://, content://, ph://) using ExpoFile
   const isNativeFileUri =
-    photoUri.startsWith('file://') ||
-    photoUri.startsWith('content://') ||
-    photoUri.startsWith('ph://');
+    photoUri.startsWith('file://') || photoUri.startsWith('content://') || photoUri.startsWith('ph://');
 
+  // Strategy 1: native local file — append the ExpoFile instance directly.
   if (isNativeFileUri && ExpoFile) {
     try {
-      const expoFile = new ExpoFile(photoUri);
-      const bytes = await expoFile.bytes();
-      const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
-      if (typeof File !== 'undefined') {
-        formData.append(fieldName, new File([blob], filename, { type: mimeType }));
-      } else {
-        (blob as any).name = filename;
-        formData.append(fieldName, blob, filename);
-      }
+      const file = new ExpoFile(photoUri);
+      formData.append(fieldName, file as unknown as Blob, filename);
       return;
     } catch {
-      // ExpoFile read failed, proceed to Strategy 3
+      // ExpoFile unavailable or failed to read — fall through to remaining strategies
     }
   }
 
-  // Strategy 3: Standard Blob fallback for Node / test / offline environments.
-  // CRITICAL: NEVER fall back to { uri, name, type } as any!
+  // Strategy 2: remote/http(s) URI — fetch and append the resulting Blob.
+  if (photoUri.startsWith('http://') || photoUri.startsWith('https://')) {
+    try {
+      const res = await fetch(photoUri);
+      if (res.ok) {
+        const blob = await res.blob();
+        if (typeof File !== 'undefined') {
+          formData.append(fieldName, new File([blob], filename, { type: mimeType }));
+        } else {
+          (blob as any).name = filename;
+          formData.append(fieldName, blob, filename);
+        }
+        return;
+      }
+    } catch (err) {
+      console.warn('Photo fetch-blob fallback failed', err);
+    }
+  }
+
+  // Strategy 2b: local file:// URI without ExpoFile (e.g. Node test env) — read via fs.
   let fallbackBytes: Uint8Array = DUMMY_JPEG;
   if (typeof window === 'undefined' && photoUri.startsWith('file://')) {
     try {
@@ -126,10 +133,11 @@ export async function appendPhotoToFormData(
         fallbackBytes = new Uint8Array(fs.readFileSync(cleanPath));
       }
     } catch {
-      // fallback
+      // fallback to dummy jpeg below
     }
   }
 
+  // Strategy 3: last-resort dummy JPEG so the request is never blocked entirely.
   const fallbackBlob = new Blob([fallbackBytes as unknown as BlobPart], { type: mimeType });
   if (typeof File !== 'undefined') {
     formData.append(fieldName, new File([fallbackBlob], filename, { type: mimeType }));
@@ -139,8 +147,18 @@ export async function appendPhotoToFormData(
   }
 }
 
-// Backward compatibility alias
-export const appendPhoto = appendPhotoToFormData;
+async function postFormData(url: string, formData: FormData, ms: number = 30000): Promise<Response> {
+  if (PlatformOS === 'android' || PlatformOS === 'ios') {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await expoFetch(url, { method: 'POST', body: formData, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return timedFetch(url, { method: 'POST', body: formData }, ms);
+}
 
 export class CivicFeedApi {
   private baseUrl: string;
@@ -212,10 +230,7 @@ export class CivicFeedApi {
   async analyzeTicketPhoto(photoUri: string): Promise<any> {
     const formData = new FormData();
     await appendPhotoToFormData(formData, 'photo', photoUri, 'defect.jpg');
-    const res = await timedFetch(`${this.baseUrl}/tickets/analyze`, {
-      method: 'POST',
-      body: formData,
-    }, 45000);
+    const res = await postFormData(`${this.baseUrl}/tickets/analyze`, formData, 45000);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(typeof err.detail === 'string' ? err.detail : 'Analysis failed');
@@ -250,10 +265,7 @@ export class CivicFeedApi {
       formData.append('custom_description', customDescription);
     }
 
-    const res = await timedFetch(`${this.baseUrl}/tickets/report`, {
-      method: 'POST',
-      body: formData,
-    });
+    const res = await postFormData(`${this.baseUrl}/tickets/report`, formData);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -312,10 +324,7 @@ export class CivicFeedApi {
     formData.append('latitude', latitude.toString());
     formData.append('longitude', longitude.toString());
 
-    const res = await fetch(`${this.baseUrl}/tickets/${ticketId}/provisional-fix`, {
-      method: 'POST',
-      body: formData,
-    });
+    const res = await postFormData(`${this.baseUrl}/tickets/${ticketId}/provisional-fix`, formData);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -337,10 +346,7 @@ export class CivicFeedApi {
     formData.append('latitude', latitude.toString());
     formData.append('longitude', longitude.toString());
 
-    const res = await timedFetch(`${this.baseUrl}/tickets/${ticketId}/verify`, {
-      method: 'POST',
-      body: formData,
-    });
+    const res = await postFormData(`${this.baseUrl}/tickets/${ticketId}/verify`, formData);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
