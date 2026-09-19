@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Pothole Detector Stage Demo",
+    "slug": "pothole-detector-stage-demo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#090d16"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMotionUsageDescription": "Uses accelerometer and gyroscope motion sensors to detect road potholes and stage toss impacts."
+      }
+    },
+    "android": {
+      "permissions": [
+        "android.permission.HIGH_SAMPLING_RATE_SENSORS"
+      ]
+    }
+  }
+}

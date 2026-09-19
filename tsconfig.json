@@ -19,6 +19,8 @@
   ],
   "exclude": [
     "legacy_scamshield",
+    "mlalads-tracker",
+    "pothole-demo-app",
     "node_modules"
   ]
 }
