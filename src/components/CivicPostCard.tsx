@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -54,6 +54,19 @@ export const CivicPostCard: React.FC<Props> = ({
   const [isEndorsing, setIsEndorsing] = useState(false);
   const [showBonus, setShowBonus] = useState(false);
   const [showEscalationModal, setShowEscalationModal] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const reporterId = (ticket as Ticket & { reporter_id?: string }).reporter_id;
+  const authorHandle = reporterId
+    ? 'Auditor_' + reporterId.slice(-4).toUpperCase()
+    : 'Auditor_Anonymous';
+  const avatarInitial = authorHandle.charAt(0);
 
   const distance = calculateHaversineDistance(
     userCoords.latitude,
@@ -95,7 +108,8 @@ export const CivicPostCard: React.FC<Props> = ({
     setUpvotes((prev) => prev + 1);
     setHasEndorsed(true);
     setShowBonus(true);
-    setTimeout(() => setShowBonus(false), 2200);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setShowBonus(false), 2200);
 
     try {
       await onEndorse(ticket.id);
@@ -110,7 +124,7 @@ export const CivicPostCard: React.FC<Props> = ({
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `[CivicFeed Alert] ${ticket.category} (Severity ${ticket.severity}/5) at Ward 14 Delhi. Status: ${ticket.status}. Verify and track: https://civicfeed.org/t/${ticket.id}`,
+        message: `[CivicFeed Alert] ${ticket.category} (Severity ${ticket.severity}/5) at ${ticket.ward_id || 'Ward 14 Delhi'}. Status: ${ticket.status}. Verify and track: ashokansprayas://ticket/${ticket.id}`,
       });
     } catch {
       // dismissed
@@ -125,11 +139,11 @@ export const CivicPostCard: React.FC<Props> = ({
       <View style={styles.headerRow}>
         <View style={styles.authorGroup}>
           <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitial}>A</Text>
+            <Text style={styles.avatarInitial}>{avatarInitial}</Text>
           </View>
           <View>
             <View style={styles.nameAndWard}>
-              <Text style={styles.authorHandle}>Auditor_Anonymous</Text>
+              <Text style={styles.authorHandle}>{authorHandle}</Text>
               <View style={styles.wardBadge}>
                 <Text style={styles.wardText}>{ticket.ward_id || 'Ward 14'}</Text>
               </View>
@@ -144,7 +158,7 @@ export const CivicPostCard: React.FC<Props> = ({
       <View style={styles.metaRow}>
         <View style={styles.categoryBadge}>
           {getCategoryIcon(ticket.category)}
-          <Text style={styles.categoryText}>{ticket.category.replace('_', ' ')}</Text>
+          <Text style={styles.categoryText}>{ticket.category.replace(/_/g, ' ')}</Text>
         </View>
         <SeverityMeter severity={ticket.severity} />
       </View>
@@ -247,6 +261,14 @@ export const CivicPostCard: React.FC<Props> = ({
                 {distance <= 50 ? 'Audit Fix (+150p)' : 'Move Within 50m'}
               </Text>
             </TouchableOpacity>
+          ) : ticket.status === 'WEATHER_OCCLUDED' ? (
+            <View
+              style={styles.occludedPill}
+              accessibilityLabel="Submerged — audit paused"
+              accessible={true}
+            >
+              <Text style={styles.occludedText}>Submerged — audit paused</Text>
+            </View>
           ) : (
             ticket.status === 'RESOLVED' && (
               <View style={styles.resolvedBadge}>
@@ -394,7 +416,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#64748B',
     marginTop: 1,
   },
   metaRow: {
@@ -582,6 +604,22 @@ const styles = StyleSheet.create({
   },
   resolvedText: {
     color: '#16A34A',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  occludedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    opacity: 0.8,
+  },
+  occludedText: {
+    color: '#64748B',
     fontSize: 12,
     fontWeight: '700',
   },

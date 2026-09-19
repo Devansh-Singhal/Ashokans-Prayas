@@ -25,13 +25,16 @@ async def seed():
                     phone_number=phone,
                     is_under_18=is_u18,
                     parent_phone_number=parent_p,
-                    consent_status=ConsentStatus.ACTIVE.value,
+                    consent_status=(
+                        ConsentStatus.PENDING_PARENT_CONSENT.value
+                        if is_u18
+                        else ConsentStatus.ACTIVE.value
+                    ),
                     points_balance=pts
                 )
                 session.add(u)
             else:
                 existing.public_handle = handle
-                existing.points_balance = pts
         
         await session.flush()
         
@@ -60,8 +63,8 @@ async def seed():
                 "category": "GARBAGE_ACCUMULATION",
                 "severity": 3,
                 "status": TicketStatus.PROVISIONAL_FIX.value,
-                "latitude": 28.6295,
-                "longitude": 77.2072,
+                "latitude": 28.6290,
+                "longitude": 77.2066,
                 "upvotes_count": 18,
                 # Municipal street waste heap before, and freshly swept curb after
                 "report_photo_url": "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=1200&q=80",

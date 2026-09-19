@@ -115,6 +115,11 @@ async def test_endorsement_increments_counter(client):
         "/api/v1/auth/register", json={"phone": "+915555555555", "is_under_18": False}
     )
     uid = reg.json()["user_id"]
+    other = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+915555555556", "is_under_18": False}
+        )
+    ).json()
     rep = await client.post(
         "/api/v1/tickets/report",
         files=photo("garbage.jpg"),
@@ -126,7 +131,7 @@ async def test_endorsement_increments_counter(client):
         },
     )
     tid = rep.json()["ticket_id"]
-    e = await client.post(f"/api/v1/tickets/{tid}/endorse", json={"user_id": uid})
+    e = await client.post(f"/api/v1/tickets/{tid}/endorse", json={"user_id": other["user_id"]})
     assert e.status_code == 200
     assert e.json()["upvotes"] == 2
     assert e.json()["awarded"] == 25
@@ -169,7 +174,7 @@ async def test_reciprocity_decay_strangers(client):
     v = await client.post(
         f"/api/v1/tickets/{tid}/verify",
         files=photo("fix.jpg"),
-        data={"auditor_id": b["user_id"]},
+        data={"auditor_id": b["user_id"], "latitude": "28.7", "longitude": "77.3"},
     )
     assert v.status_code == 200
     assert v.json()["credited_points"] == 150
@@ -214,7 +219,7 @@ async def test_reciprocity_decay_collusion_loop(client):
         v = await client.post(
             f"/api/v1/tickets/{tid}/verify",
             files=photo("fix.jpg"),
-            data={"auditor_id": b["user_id"]},
+            data={"auditor_id": b["user_id"], "latitude": f"28.8{i}", "longitude": "77.4"},
         )
         assert v.status_code == 200
         last = v.json()
@@ -229,6 +234,11 @@ async def test_monsoon_occlusion_blocks_closure(client):
         "/api/v1/auth/register", json={"phone": "+910101010101", "is_under_18": False}
     )
     uid = reg.json()["user_id"]
+    other = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+910202020202", "is_under_18": False}
+        )
+    ).json()
     rep = await client.post(
         "/api/v1/tickets/report",
         files=photo("wet-pothole.jpg"),
@@ -243,12 +253,16 @@ async def test_monsoon_occlusion_blocks_closure(client):
     assert rep.json()["status"] == "WEATHER_OCCLUDED"
     tid = rep.json()["ticket_id"]
 
-    fix = await client.post(f"/api/v1/tickets/{tid}/provisional-fix", files=photo("fix.jpg"))
+    fix = await client.post(
+        f"/api/v1/tickets/{tid}/provisional-fix",
+        files=photo("fix.jpg"),
+        data={"uploader_id": uid, "latitude": "28.9", "longitude": "77.5"},
+    )
     assert fix.status_code == 400
     ver = await client.post(
         f"/api/v1/tickets/{tid}/verify",
         files=photo("fix.jpg"),
-        data={"auditor_id": uid},
+        data={"auditor_id": other["user_id"], "latitude": "28.9", "longitude": "77.5"},
     )
     assert ver.status_code == 400
 
@@ -279,10 +293,9 @@ async def test_transient_item_zero_points(client):
     v = await client.post(
         f"/api/v1/tickets/{tid}/verify",
         files=photo("fix.jpg"),
-        data={"auditor_id": b["user_id"]},
+        data={"auditor_id": b["user_id"], "latitude": "29.0", "longitude": "77.6"},
     )
-    assert v.status_code == 200
-    assert v.json()["credited_points"] == 0
+    assert v.status_code == 429
 
 
 @pytest.mark.asyncio
@@ -329,3 +342,173 @@ async def test_feed_and_scorecard(client):
     sc = await client.get("/api/v1/tickets/ward/WARD_S/scorecard")
     assert sc.status_code == 200
     assert sc.json()["total_tickets"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_self_verify_rejected(client):
+    from datetime import datetime, timedelta, timezone
+
+    from app.db import SessionLocal
+    from app.models import Ticket
+
+    reg = await client.post(
+        "/api/v1/auth/register", json={"phone": "+911313131313", "is_under_18": False}
+    )
+    uid = reg.json()["user_id"]
+    rep = await client.post(
+        "/api/v1/tickets/report",
+        files=photo("pothole.jpg"),
+        data={
+            "latitude": "28.65",
+            "longitude": "77.25",
+            "ward_id": "WARD_SELF",
+            "reporter_id": uid,
+        },
+    )
+    assert rep.status_code == 200
+    tid = rep.json()["ticket_id"]
+    async with SessionLocal() as s:
+        t = await s.get(Ticket, tid)
+        t.created_at = datetime.now(timezone.utc) - timedelta(hours=5)
+        await s.commit()
+    fix = await client.post(
+        f"/api/v1/tickets/{tid}/provisional-fix",
+        files=photo("fix.jpg"),
+        data={"uploader_id": uid, "latitude": "28.65", "longitude": "77.25"},
+    )
+    assert fix.status_code == 200
+    v = await client.post(
+        f"/api/v1/tickets/{tid}/verify",
+        files=photo("fix.jpg"),
+        data={"auditor_id": uid, "latitude": "28.65", "longitude": "77.25"},
+    )
+    assert v.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_double_endorse_rejected(client):
+    a = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+911414141414", "is_under_18": False}
+        )
+    ).json()
+    b = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+911424242424", "is_under_18": False}
+        )
+    ).json()
+    rep = await client.post(
+        "/api/v1/tickets/report",
+        files=photo("pothole.jpg"),
+        data={
+            "latitude": "28.66",
+            "longitude": "77.26",
+            "ward_id": "WARD_ENDORSE",
+            "reporter_id": a["user_id"],
+        },
+    )
+    assert rep.status_code == 200
+    tid = rep.json()["ticket_id"]
+    first = await client.post(f"/api/v1/tickets/{tid}/endorse", json={"user_id": b["user_id"]})
+    assert first.status_code == 200
+    second = await client.post(f"/api/v1/tickets/{tid}/endorse", json={"user_id": b["user_id"]})
+    assert second.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_verify_out_of_range(client):
+    from datetime import datetime, timedelta, timezone
+
+    from app.db import SessionLocal
+    from app.models import Ticket
+
+    a = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+911515151515", "is_under_18": False}
+        )
+    ).json()
+    b = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+911616161616", "is_under_18": False}
+        )
+    ).json()
+    rep = await client.post(
+        "/api/v1/tickets/report",
+        files=photo("pothole.jpg"),
+        data={
+            "latitude": "28.6",
+            "longitude": "77.2",
+            "ward_id": "WARD_RANGE",
+            "reporter_id": a["user_id"],
+        },
+    )
+    assert rep.status_code == 200
+    tid = rep.json()["ticket_id"]
+    async with SessionLocal() as s:
+        t = await s.get(Ticket, tid)
+        t.created_at = datetime.now(timezone.utc) - timedelta(hours=5)
+        await s.commit()
+    fix = await client.post(
+        f"/api/v1/tickets/{tid}/provisional-fix",
+        files=photo("fix.jpg"),
+        data={"uploader_id": b["user_id"], "latitude": "28.6", "longitude": "77.2"},
+    )
+    assert fix.status_code == 200
+    v = await client.post(
+        f"/api/v1/tickets/{tid}/verify",
+        files=photo("fix.jpg"),
+        data={"auditor_id": b["user_id"], "latitude": "29.0", "longitude": "78.0"},
+    )
+    assert v.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_reverify_resolved_rejected(client):
+    from datetime import datetime, timedelta, timezone
+
+    from app.db import SessionLocal
+    from app.models import Ticket
+
+    a = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+911717171717", "is_under_18": False}
+        )
+    ).json()
+    b = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+911818181818", "is_under_18": False}
+        )
+    ).json()
+    c = (
+        await client.post(
+            "/api/v1/auth/register", json={"phone": "+911919191919", "is_under_18": False}
+        )
+    ).json()
+    rep = await client.post(
+        "/api/v1/tickets/report",
+        files=photo("pothole.jpg"),
+        data={
+            "latitude": "28.67",
+            "longitude": "77.27",
+            "ward_id": "WARD_REVERIFY",
+            "reporter_id": a["user_id"],
+        },
+    )
+    assert rep.status_code == 200
+    tid = rep.json()["ticket_id"]
+    async with SessionLocal() as s:
+        t = await s.get(Ticket, tid)
+        t.created_at = datetime.now(timezone.utc) - timedelta(hours=5)
+        await s.commit()
+    first = await client.post(
+        f"/api/v1/tickets/{tid}/verify",
+        files=photo("fix.jpg"),
+        data={"auditor_id": b["user_id"], "latitude": "28.67", "longitude": "77.27"},
+    )
+    assert first.status_code == 200
+    second = await client.post(
+        f"/api/v1/tickets/{tid}/verify",
+        files=photo("fix.jpg"),
+        data={"auditor_id": c["user_id"], "latitude": "28.67", "longitude": "77.27"},
+    )
+    assert second.status_code == 409

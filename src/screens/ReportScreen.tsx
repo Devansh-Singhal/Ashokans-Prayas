@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -44,6 +44,14 @@ export const ReportScreen: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [filedInfo, setFiledInfo] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -63,6 +71,7 @@ export const ReportScreen: React.FC = () => {
         }
       } catch {
         // Fallback default coordinates
+        setLocationLabel('Demo location: Ward 14 • Connaught Place, New Delhi');
       }
     })();
   }, []);
@@ -120,21 +129,37 @@ export const ReportScreen: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      await api.reportTicket(
+      const res = await api.reportTicket(
         photoUri,
-        coords.latitude + (Math.random() - 0.5) * 0.002,
-        coords.longitude + (Math.random() - 0.5) * 0.002,
+        coords.latitude,
+        coords.longitude,
         'WARD_DELHI_14',
         currentUser.id
       );
       setIsSuccess(true);
-      updatePoints(50);
-      setTimeout(() => {
+      if (res?.category) {
+        setFiledInfo(
+          `${res.category} · severity ${res.severity ?? '?'}/5 · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
+        );
+      } else {
+        setFiledInfo(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+      }
+      updatePoints(res?.escrow_points ?? 50);
+      timer.current = setTimeout(() => {
         setIsSuccess(false);
         setPhotoUri(null);
+        setFiledInfo(null);
       }, 3000);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to publish report. Please try again.');
+      const msg: string = err?.message || '';
+      setIsSuccess(false);
+      if (msg.startsWith('DUPLICATE:')) {
+        setErrorMessage('Already mapped nearby. Endorse it in the feed instead.');
+      } else if (msg.includes('NEEDS_CLARIFICATION')) {
+        setErrorMessage('AI could not classify — please retake with clearer framing.');
+      } else {
+        setErrorMessage(msg || 'Failed to publish report. Please try again.');
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -171,7 +196,10 @@ export const ReportScreen: React.FC = () => {
           </View>
           <TouchableOpacity
             style={styles.retakeBtn}
-            onPress={() => setPhotoUri(null)}
+            onPress={() => {
+              setPhotoUri(null);
+              setFiledInfo(null);
+            }}
             activeOpacity={0.8}
           >
             <RotateCcw size={14} color="#0F172A" />
@@ -237,6 +265,7 @@ export const ReportScreen: React.FC = () => {
             <Text style={styles.successTitle}>Report Published to Ward 14 Feed</Text>
             <Text style={styles.successSub}>
               +50 Escrow Points Awarded. Defect is now publicly visible for neighborhood endorsement.
+              {filedInfo ? `\nAI verdict: ${filedInfo}` : ''}
             </Text>
           </View>
         </View>

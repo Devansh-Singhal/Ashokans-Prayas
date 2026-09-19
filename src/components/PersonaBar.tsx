@@ -87,6 +87,7 @@ export const PersonaBar: React.FC = () => {
               <TouchableOpacity
                 onPress={() => setShowExplainer(false)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Close"
               >
                 <X size={18} color="#94A3B8" />
               </TouchableOpacity>
@@ -143,6 +144,7 @@ export const PersonaBar: React.FC = () => {
               style={styles.modalCloseButton}
               onPress={() => setShowExplainer(false)}
               activeOpacity={0.85}
+              accessibilityLabel="Close"
             >
               <Text style={styles.modalCloseText}>Understood</Text>
             </TouchableOpacity>
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#1E293B',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#334155',

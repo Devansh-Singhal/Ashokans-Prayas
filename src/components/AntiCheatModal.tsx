@@ -12,7 +12,20 @@ interface Props {
 export const AntiCheatModal: React.FC<Props> = ({ visible, result, onClose }) => {
   if (!result) return null;
 
+  const pairingNumber = result.pairing_count ?? 1;
   const isCollusion = (result.decay_percentage || 0) > 0;
+  const needsEvidence = result.credited_points === 0;
+
+  const title = needsEvidence
+    ? 'Audit Recorded — Evidence Needed'
+    : isCollusion
+      ? 'Anti-Collusion Protection Activated'
+      : 'Verified Clean & Credited!';
+  const subtitle = needsEvidence
+    ? 'Your audit was recorded but no points were credited yet — a provisional fix photo is required before credit.'
+    : isCollusion
+      ? 'Our game-theoretic Reciprocity Decay engine detected repeated mutual verification with this reporter.'
+      : 'You successfully verified an independent citizen report. Full audit credit awarded!';
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -32,15 +45,11 @@ export const AntiCheatModal: React.FC<Props> = ({ visible, result, onClose }) =>
           </View>
 
           <Text style={styles.title}>
-            {isCollusion
-              ? 'Anti-Collusion Protection Activated'
-              : 'Verified Clean & Credited!'}
+            {title}
           </Text>
 
           <Text style={styles.subtitle}>
-            {isCollusion
-              ? 'Our game-theoretic Reciprocity Decay engine detected repeated mutual verification with this reporter.'
-              : 'You successfully verified an independent citizen report. Full audit credit awarded!'}
+            {subtitle}
           </Text>
 
           <View style={styles.pointsBox}>
@@ -49,7 +58,7 @@ export const AntiCheatModal: React.FC<Props> = ({ visible, result, onClose }) =>
               <Text style={styles.pointOldValue}>150 pts</Text>
             </View>
 
-            {isCollusion && (
+            {isCollusion && !needsEvidence && (
               <View style={styles.decayRow}>
                 <View style={styles.decayTag}>
                   <TrendingDown size={14} color="#DC2626" />
@@ -75,14 +84,14 @@ export const AntiCheatModal: React.FC<Props> = ({ visible, result, onClose }) =>
             <View style={styles.telemetryBox}>
               <Users size={16} color="#475569" />
               <Text style={styles.telemetryText}>
-                Historical Pairings with this Reporter: <Text style={{ fontWeight: '800' }}>{result.pairing_count || 1} times</Text>
+                This is pairing #{pairingNumber} (prior pairings: {pairingNumber - 1})
               </Text>
             </View>
           )}
 
           <Text style={styles.explanation}>
             {isCollusion
-              ? 'Formula: 150 × (1 / [1 + prior_pairings]). This mathematical decay ensures college cartels cannot farm hours or certificates.'
+              ? 'Formula: 150 × (1 / [1 + prior_pairings]) × evidence_weight. First audit of a pair is pairing #1 (prior 0). This mathematical decay ensures college cartels cannot farm hours or certificates.'
               : 'Ticket marked RESOLVED on the public ward timeline.'}
           </Text>
 

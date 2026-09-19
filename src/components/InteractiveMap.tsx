@@ -37,6 +37,10 @@ export const InteractiveMap: React.FC<Props> = ({
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
     const handleMessage = (event: MessageEvent) => {
+      // Production should pin tile/postMessage origins. srcDoc iframes have
+      // origin 'null', so accept same-origin or 'null' and require a ticketId.
+      if (event.origin !== window.location.origin && event.origin !== 'null') return;
+      if (!event.data || typeof event.data !== 'object' || !event.data.ticketId) return;
       if (event.data?.type === 'TICKET_CLICKED') {
         const found = tickets.find((t) => t.id === event.data.ticketId);
         if (found) {
@@ -175,8 +179,8 @@ export const InteractiveMap: React.FC<Props> = ({
       zoomControl: false,
     });
 
-    // Sleek, high-contrast CartoDB Voyager tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    // CartoDB dark_matter tiles to match #0F172A chrome
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
       subdomains: 'abcd',
       maxZoom: 19,
@@ -287,12 +291,38 @@ export const InteractiveMap: React.FC<Props> = ({
     );
   }
 
+  // Project tickets onto the radar by lat/lng (index-grid fallback when span is degenerate)
+  const lats = tickets.map((t) => t.latitude);
+  const lngs = tickets.map((t) => t.longitude);
+  const minLat = lats.length ? Math.min(...lats) : 0;
+  const maxLat = lats.length ? Math.max(...lats) : 0;
+  const minLng = lngs.length ? Math.min(...lngs) : 0;
+  const maxLng = lngs.length ? Math.max(...lngs) : 0;
+  const latSpan = maxLat - minLat;
+  const lngSpan = maxLng - minLng;
+  const useProjection = tickets.length >= 2 && latSpan > 0 && lngSpan > 0;
+  const projectPin = (t: Ticket, idx: number): { top: `${number}%`; left: `${number}%` } => {
+    if (!useProjection) {
+      return {
+        top: `${20 + ((idx * 13) % 60)}%` as `${number}%`,
+        left: `${15 + ((idx * 27) % 70)}%` as `${number}%`,
+      };
+    }
+    const pad = 0.12; // keep pins inside the radar
+    const x = (t.longitude - minLng) / lngSpan;
+    const y = (maxLat - t.latitude) / latSpan; // north at top
+    return {
+      top: `${(pad + y * (1 - pad * 2)) * 100}%` as `${number}%`,
+      left: `${(pad + x * (1 - pad * 2)) * 100}%` as `${number}%`,
+    };
+  };
+
   // Native mobile fallback (stylized spatial coordinate radar)
   return (
     <View style={styles.container}>
       <View style={styles.radarHeader}>
         <Text style={styles.radarTitle}>WARD 14 GEOSPATIAL RADAR</Text>
-        <Text style={styles.radarSub}>Central Delhi Corridor ({tickets.length} hazards mapped)</Text>
+        <Text style={styles.radarSub}>Central Delhi Corridor (projected pins) ({tickets.length} hazards mapped)</Text>
       </View>
       <View style={styles.nativeGrid}>
         {tickets.map((t, idx) => {
@@ -304,10 +334,7 @@ export const InteractiveMap: React.FC<Props> = ({
               key={t.id}
               style={[
                 styles.nativePin,
-                {
-                  top: `${20 + (idx * 13) % 60}%`,
-                  left: `${15 + (idx * 27) % 70}%`,
-                },
+                projectPin(t, idx),
               ]}
               onPress={() => onSelectTicket(t)}
             >

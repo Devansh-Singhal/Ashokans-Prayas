@@ -54,6 +54,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentPersona, setCurrentPersona] = useState<DemoPersona>(DEMO_PERSONAS[0]);
   const [isParentConsentModalVisible, setParentConsentModalVisible] = useState(false);
+  const [balances, setBalances] = useState<Record<string, number>>({});
   const [currentUser, setCurrentUser] = useState<User>({
     id: currentPersona.id,
     public_handle: currentPersona.handle,
@@ -76,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_under_18: found.isUnder18,
         parent_phone_number: found.parentPhone,
         consent_status: found.isUnder18 ? 'PENDING_PARENT_CONSENT' : 'ACTIVE',
-        points_balance: found.points,
+        points_balance: balances[personaId] ?? found.points,
         verified_hours: found.id === 'user-anjali-id' ? 24.0 : 8.0,
       });
       if (found.isUnder18) {
@@ -86,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updatePoints = (delta: number) => {
+    setBalances((prev) => ({ ...prev, [currentPersona.id]: (prev[currentPersona.id] ?? currentUser.points_balance) + delta }));
     setCurrentUser((prev) => ({
       ...prev,
       points_balance: prev.points_balance + delta,
@@ -93,6 +95,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const simulateParentApproval = async () => {
+    // Use the real API when a consent token exists; otherwise fall back to a local flip (demo mode).
+    if (currentUser.consent_token) {
+      try {
+        await api.verifyParentConsent(currentUser.consent_token || '');
+        setCurrentUser((prev) => ({
+          ...prev,
+          consent_status: 'ACTIVE',
+        }));
+        setParentConsentModalVisible(false);
+        return;
+      } catch {
+        // fall through to local flip
+      }
+    }
     setCurrentUser((prev) => ({
       ...prev,
       consent_status: 'ACTIVE',

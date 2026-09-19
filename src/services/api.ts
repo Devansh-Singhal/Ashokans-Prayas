@@ -13,9 +13,20 @@ try {
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-async function appendPhoto(formData: FormData, fieldName: string, photoUri: string, defaultName: string) {
-  let filename = photoUri.split('/').pop()?.split('?')[0] || defaultName;
-  if (!filename.includes('.')) {
+async function timedFetch(url: string, init?: RequestInit, ms: number = 20000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function appendPhoto(formData: FormData, fieldName: string, photoUri: string, defaultName: string, hintName?: string) {
+  void hintName;
+  let filename = (photoUri.split('/').pop()?.split('?')[0] || defaultName).replace(/[^a-zA-Z0-9._-]/g, '_');
+  if (!/\.(jpe?g|png|webp)$/i.test(filename)) {
     filename = defaultName;
   }
   const match = /\.(\w+)$/.exec(filename);
@@ -26,7 +37,7 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
     try {
       const response = await fetch(photoUri);
       const blob = await response.blob();
-      formData.append(fieldName, blob, filename.toLowerCase().includes('pothole') || filename.toLowerCase().includes('fix') ? filename : defaultName);
+      formData.append(fieldName, blob, filename);
       return;
     } catch (err) {
       console.warn('Web fetch blob fallback', err);
@@ -41,7 +52,7 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
         if (res.ok) {
           const buf = await res.arrayBuffer();
           const blob = new Blob([buf], { type });
-          formData.append(fieldName, blob, filename.toLowerCase().includes('pothole') || filename.toLowerCase().includes('fix') ? filename : defaultName);
+          formData.append(fieldName, blob, filename);
           return;
         }
       } catch (e) {
@@ -59,7 +70,7 @@ async function appendPhoto(formData: FormData, fieldName: string, photoUri: stri
       0x01, 0x00, 0x00, 0x3F, 0x00, 0x7F, 0x00, 0xFF, 0xD9
     ]);
     const blob = new Blob([dummyJpeg], { type: 'image/jpeg' });
-    formData.append(fieldName, blob, defaultName);
+    formData.append(fieldName, blob, filename);
     return;
   }
 
@@ -98,7 +109,7 @@ export class CivicFeedApi {
     const data = await res.json();
     return {
       id: data.user_id,
-      public_handle: data.public_handle || data.anonymous_handle,
+      public_handle: data.public_handle || data.anonymous_handle || 'Auditor_Unknown',
       phone_number: phoneNumber,
       consent_status: (data.consent_status || (isUnder18 ? 'PENDING_PARENT_CONSENT' : 'ACTIVE')) as any,
       points_balance: 0,
@@ -116,14 +127,14 @@ export class CivicFeedApi {
     }
     const data = await res.json();
     return {
-      message: data.message,
+      message: data.message || 'Consent verified',
       consent_status: data.consent_status,
       status: data.consent_status,
     };
   }
 
   async getWardFeed(wardId: string, page: number = 1, size: number = 20): Promise<{ tickets: Ticket[]; total: number; ward_id: string }> {
-    const res = await fetch(`${this.baseUrl}/feed/ward/${encodeURIComponent(wardId)}?page=${page}&size=${size}`);
+    const res = await timedFetch(`${this.baseUrl}/feed/ward/${encodeURIComponent(wardId)}?page=${page}&size=${size}`);
     if (!res.ok) {
       throw new Error(`Failed to fetch ward feed (${res.status})`);
     }
@@ -149,7 +160,7 @@ export class CivicFeedApi {
     formData.append('ward_id', wardId);
     formData.append('reporter_id', reporterId);
 
-    const res = await fetch(`${this.baseUrl}/tickets/report`, {
+    const res = await timedFetch(`${this.baseUrl}/tickets/report`, {
       method: 'POST',
       body: formData,
     });
@@ -159,29 +170,54 @@ export class CivicFeedApi {
       throw new Error(typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail) || 'Failed to report issue');
     }
     const data = await res.json();
+    if (data.needs_clarification) {
+      throw new Error('NEEDS_CLARIFICATION: ' + (data.message || 'Low confidence, please retake'));
+    }
+    if (data.duplicate_of) {
+      throw new Error('DUPLICATE:' + (data.duplicate_of || data.ticket_id));
+    }
     return {
       id: data.ticket_id || data.id,
       ticket_id: data.ticket_id || data.id,
       ...data,
+      points_awarded: data.escrow_points,
     };
   }
 
-  async endorseTicket(ticketId: string, userId: string): Promise<{ message: string; upvotes: number }> {
+  async endorseTicket(ticketId: string, userId: string): Promise<{ message: string; upvotes: number; awarded: boolean; ticket_id: string }> {
     const res = await fetch(`${this.baseUrl}/tickets/${ticketId}/endorse`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId }),
     });
+    if (res.status === 409) {
+      throw new Error('ALREADY_ENDORSED');
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Failed to endorse ticket');
     }
-    return res.json();
+    const data = await res.json();
+    return {
+      message: data.message || 'Endorsed',
+      upvotes: data.upvotes,
+      awarded: data.awarded,
+      ticket_id: data.ticket_id,
+    };
   }
 
-  async uploadProvisionalFix(ticketId: string, photoUri: string): Promise<{ message: string; ticket_id: string; status: string }> {
+  async uploadProvisionalFix(
+    ticketId: string,
+    photoUri: string,
+    uploaderId: string,
+    latitude: number,
+    longitude: number
+  ): Promise<{ message: string; ticket_id: string; status: string }> {
     const formData = new FormData();
     await appendPhoto(formData, 'photo', photoUri, 'fix.jpg');
+    formData.append('uploader_id', uploaderId);
+    formData.append('latitude', latitude.toString());
+    formData.append('longitude', longitude.toString());
 
     const res = await fetch(`${this.baseUrl}/tickets/${ticketId}/provisional-fix`, {
       method: 'POST',
@@ -198,13 +234,17 @@ export class CivicFeedApi {
   async verifyTicket(
     ticketId: string,
     photoUri: string,
-    auditorId: string
+    auditorId: string,
+    latitude: number,
+    longitude: number
   ): Promise<VerificationResult> {
     const formData = new FormData();
     await appendPhoto(formData, 'photo', photoUri, 'fix.jpg');
     formData.append('auditor_id', auditorId);
+    formData.append('latitude', latitude.toString());
+    formData.append('longitude', longitude.toString());
 
-    const res = await fetch(`${this.baseUrl}/tickets/${ticketId}/verify`, {
+    const res = await timedFetch(`${this.baseUrl}/tickets/${ticketId}/verify`, {
       method: 'POST',
       body: formData,
     });
@@ -215,17 +255,18 @@ export class CivicFeedApi {
     }
     const data = await res.json();
     return {
-      message: data.message,
+      message: data.message || 'Verified',
       credited_points: data.credited_points,
       decay_percentage: data.decay_percentage,
       pairing_count: data.pair_count_after,
       ticket_status: data.status,
-      is_collusion_flagged: data.decay_percentage > 0,
+      is_collusion_flagged: data.decay_percentage > 0 && data.credited_points > 0,
+      is_transient: false,
     };
   }
 
   async getWardScorecard(wardId: string): Promise<WardScorecard> {
-    const res = await fetch(`${this.baseUrl}/tickets/ward/${encodeURIComponent(wardId)}/scorecard`);
+    const res = await timedFetch(`${this.baseUrl}/tickets/ward/${encodeURIComponent(wardId)}/scorecard`);
     if (!res.ok) {
       throw new Error(`Failed to fetch scorecard (${res.status})`);
     }

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { CivicPostCard } from '../components/CivicPostCard';
 import { CivicOnboardingCard } from '../components/CivicOnboardingCard';
@@ -14,6 +15,7 @@ import { AntiCheatModal } from '../components/AntiCheatModal';
 import { Ticket, TicketCategory, VerificationResult } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { getCurrentGPS } from '../services/location';
 import { Sparkles } from 'lucide-react-native';
 
 export const FeedScreen: React.FC = () => {
@@ -22,20 +24,24 @@ export const FeedScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [userCoords, setUserCoords] = useState({ latitude: 28.6289, longitude: 77.2065 });
+  const [usingFallback, setUsingFallback] = useState(true);
 
   // Anti-cheat modal state
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const wardId = 'WARD_DELHI_14';
-  const userCoords = { latitude: 28.6289, longitude: 77.2065 }; // Delhi Ward 14 center
 
   const fetchFeed = async () => {
     try {
+      setLoadError(null);
       const data = await api.getWardFeed(wardId);
       setTickets(data.tickets);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load feed:', err);
+      setLoadError(err?.message || 'Failed to load feed');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -46,21 +52,52 @@ export const FeedScreen: React.FC = () => {
     fetchFeed();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const gps = await getCurrentGPS();
+        setUserCoords(gps);
+        setUsingFallback(false);
+      } catch {
+        // Keep demo fallback coords
+      }
+    })();
+  }, []);
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchFeed();
   };
 
   const handleEndorse = async (ticketId: string) => {
-    await api.endorseTicket(ticketId, currentUser.id);
-    updatePoints(25);
+    try {
+      await api.endorseTicket(ticketId, currentUser.id);
+      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, upvotes: t.upvotes + 1 } : t)));
+      updatePoints(25);
+    } catch (err: any) {
+      if (err?.message === 'ALREADY_ENDORSED') {
+        Alert.alert('Already endorsed', 'You have already endorsed this ticket.');
+      } else {
+        Alert.alert('Endorse failed', err?.message || 'Could not endorse ticket.');
+      }
+    }
   };
 
   const handleVerifyPress = async (ticket: Ticket) => {
+    if (ticket.status !== 'PROVISIONAL_FIX') {
+      Alert.alert('Not ready', 'Ticket is not awaiting audit yet.');
+      return;
+    }
     try {
       // Execute live audit verification
       const sampleAuditPhoto = 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80';
-      const result = await api.verifyTicket(ticket.id, sampleAuditPhoto, currentUser.id);
+      const result = await api.verifyTicket(
+        ticket.id,
+        sampleAuditPhoto,
+        currentUser.id,
+        userCoords.latitude,
+        userCoords.longitude
+      );
 
       setVerificationResult(result);
       setIsModalVisible(true);
@@ -69,7 +106,12 @@ export const FeedScreen: React.FC = () => {
       // Refresh feed to update ticket to RESOLVED
       fetchFeed();
     } catch (err: any) {
-      alert(err.message || 'Verification failed');
+      const msg: string = err?.message || 'Verification failed';
+      if (msg.includes('Too early')) {
+        Alert.alert('Fix evidence needed', msg);
+      } else {
+        Alert.alert('Verification failed', msg);
+      }
     }
   };
 
@@ -88,6 +130,11 @@ export const FeedScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {usingFallback && (
+        <View style={styles.fallbackBanner}>
+          <Text style={styles.fallbackText}>Demo location — enable GPS for live audit</Text>
+        </View>
+      )}
       {/* Category Filter Pills */}
       <View style={styles.filterBar}>
         <FlatList
@@ -138,7 +185,14 @@ export const FeedScreen: React.FC = () => {
             <View style={styles.emptyState}>
               <Sparkles size={40} color="#94A3B8" />
               <Text style={styles.emptyTitle}>Ward 14 is Spotless!</Text>
-              <Text style={styles.emptySubtitle}>No open issues reported in this category.</Text>
+              <Text style={styles.emptySubtitle}>
+                {loadError ? `Could not load feed: ${loadError}` : 'No open issues reported in this category.'}
+              </Text>
+              {loadError && (
+                <TouchableOpacity style={styles.retryBtn} onPress={fetchFeed} activeOpacity={0.8}>
+                  <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
         />
@@ -216,5 +270,30 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     marginTop: 4,
+  },
+  fallbackBanner: {
+    backgroundColor: '#FEF3C7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FDE68A',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  fallbackText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#92400E',
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: 12,
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  retryText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

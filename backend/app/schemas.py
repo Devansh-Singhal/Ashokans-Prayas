@@ -19,9 +19,9 @@ def consent_expiry() -> datetime:
 
 
 class RegisterRequest(BaseModel):
-    phone: str = Field(min_length=4, max_length=16)
+    phone: str = Field(min_length=4, max_length=16, pattern=r"^\+?[0-9]{4,16}$")
     is_under_18: bool = False
-    parent_phone: str | None = Field(default=None, max_length=16)
+    parent_phone: str | None = Field(default=None, max_length=16, pattern=r"^\+?[0-9]{4,16}$")
 
 
 class EndorseRequest(BaseModel):

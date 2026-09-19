@@ -21,12 +21,17 @@ export interface Ticket {
   latitude: number;
   longitude: number;
   ward_id?: string;
+  reporter_id?: string;
   report_photo_url: string;
   resolution_photo_url?: string | null;
   is_commercial_adjacent?: boolean;
+  privacy_blur?: any[];
   address_hint?: string;
   created_at: string;
   resolved_at?: string | null;
+  escrow_points?: number;
+  needs_clarification?: boolean;
+  duplicate_of?: string;
 }
 
 export interface User {
@@ -48,6 +53,7 @@ export interface VerificationResult {
   pairing_count: number;
   ticket_status: TicketStatus;
   is_collusion_flagged?: boolean;
+  is_transient?: boolean;
 }
 
 export interface WardScorecard {

@@ -15,9 +15,26 @@ export const ProfileScreen: React.FC = () => {
         </View>
         <Text style={styles.handle}>{currentUser.public_handle}</Text>
         <Text style={styles.role}>{currentPersona.role} • {currentPersona.name}</Text>
-        <View style={styles.verifiedTag}>
-          <ShieldCheck size={14} color="#16A34A" />
-          <Text style={styles.verifiedText}>Civic Identity Verified</Text>
+        <View
+          style={[
+            styles.verifiedTag,
+            currentUser.consent_status !== 'ACTIVE' && { backgroundColor: '#FEF3C7' },
+          ]}
+        >
+          <ShieldCheck
+            size={14}
+            color={currentUser.consent_status === 'ACTIVE' ? '#16A34A' : '#D97706'}
+          />
+          <Text
+            style={[
+              styles.verifiedText,
+              currentUser.consent_status !== 'ACTIVE' && { color: '#92400E' },
+            ]}
+          >
+            {currentUser.consent_status === 'ACTIVE'
+              ? 'Civic Identity Verified'
+              : 'Verification Pending — parent consent required'}
+          </Text>
         </View>
       </View>
 
@@ -34,7 +51,7 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.progressDivider} />
 
         <View style={styles.hoursRow}>
-          <Text style={styles.hoursTitle}>NSS Civic Audit Hours Completed</Text>
+          <Text style={styles.hoursTitle}>NSS Civic Audit Hours (device estimate)</Text>
           <Text style={styles.hoursValue}>
             {currentUser.verified_hours || 12} / 40 hrs
           </Text>
@@ -55,7 +72,7 @@ export const ProfileScreen: React.FC = () => {
         <View style={{ flex: 1 }}>
           <Text style={styles.certTitle}>Open-Data Infrastructure Credential</Text>
           <Text style={styles.certText}>
-            Points translate into verified civic service hours co-signed with partner youth clubs. Validated with permanent cryptographic QR proof for university applications.
+            Points translate into verified civic service hours co-signed with partner youth clubs. Points and hours sync from the server ward ledger. Exportable service summary coming soon.
           </Text>
         </View>
       </View>

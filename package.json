@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "tsx": "^4.0.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -42,6 +43,10 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test:location": "tsx src/__tests__/location.test.ts",
+    "test:anticheat": "tsx src/__tests__/antiCheat.test.ts",
+    "test:postcard": "tsx src/__tests__/postCard.test.ts",
     "tunnel": "node ./scripts/dev-tunnel.js",
     "tunnel:named": "node ./scripts/dev-tunnel.js --hostname dev.deserver.in --api-hostname api.deserver.in"
   },

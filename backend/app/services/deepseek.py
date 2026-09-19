@@ -1,8 +1,10 @@
 import base64
 import json
 import os
+from io import BytesIO
 
 import httpx
+from PIL import Image
 
 PROVIDER_URL = os.environ.get(
     "DEEPSEEK_URL", "https://api.commandcode.ai/provider/v1/chat/completions"
@@ -125,10 +127,6 @@ async def classify_image(filename: str, content: bytes, content_type: str = "ima
     if not api_key:
         return sanitize(heuristic_classify(filename, content))
     try:
-        from io import BytesIO
-
-        from PIL import Image
-
         with Image.open(BytesIO(content)) as im:
             im = im.convert("RGB")
             im.thumbnail((1024, 1024))
@@ -137,47 +135,59 @@ async def classify_image(filename: str, content: bytes, content_type: str = "ima
             content = buf.getvalue()
             content_type = "image/jpeg"
     except Exception:
-        return sanitize(heuristic_classify(filename, content))
+        raise ValueError("INVALID_IMAGE: uploaded file is not a valid image")
     b64 = base64.b64encode(content).decode()
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json", "User-Agent": "CivicFeed/1.0 (httpx)"}
+    payload = {
+        "model": PROVIDER_MODEL,
+        "temperature": 0.1,
+        "max_tokens": 2000,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{content_type};base64,{b64}"},
+                    },
+                    {
+                        "type": "text",
+                        "text": "Classify this civic issue photo. Return ONLY the JSON object.",
+                    },
+                ],
+            },
+        ],
+    }
+    last_error: str = "unknown error"
+    async with httpx.AsyncClient(timeout=15) as client:
+        for attempt in range(2):
+            try:
+                r = await client.post(
+                    PROVIDER_URL,
+                    headers=headers,
+                    json=payload,
+                )
+                r.raise_for_status()
+                break
+            except Exception as exc:
+                last_error = f"{type(exc).__name__}: {exc}".strip()[:200]
+                if attempt == 0:
+                    continue
+                raise RuntimeError(f"VISION_UNAVAILABLE: {last_error}")
     try:
-        async with httpx.AsyncClient(timeout=90) as client:
-            r = await client.post(
-                PROVIDER_URL,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": PROVIDER_MODEL,
-                    "temperature": 0.1,
-                    "max_tokens": 2000,
-                    "response_format": {"type": "json_object"},
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "image_url",
-                                    "image_url": {"url": f"data:{content_type};base64,{b64}"},
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Classify this civic issue photo. Return ONLY the JSON object.",
-                                },
-                            ],
-                        },
-                    ],
-                },
-            )
-            r.raise_for_status()
-            msg = r.json()["choices"][0]["message"]
-            text = msg.get("content") or ""
-            if not text.strip():
-                text = msg.get("reasoning", "") or msg.get("reasoning_content", "") or ""
-            start, end = text.find("{"), text.rfind("}")
-            if start < 0 or end <= start:
-                return sanitize(heuristic_classify(filename, content))
-            return sanitize(json.loads(text[start : end + 1]))
-    except Exception:
-        return sanitize(heuristic_classify(filename, content))
+        msg = r.json()["choices"][0]["message"]
+        text = msg.get("content") or ""
+        if not text.strip():
+            text = msg.get("reasoning", "") or msg.get("reasoning_content", "") or ""
+        start, end = text.find("{"), text.rfind("}")
+        if start < 0 or end <= start:
+            raise ValueError("brace-search fail: no JSON object in provider reply")
+        return sanitize(json.loads(text[start : end + 1]))
+    except RuntimeError:
+        raise
+    except ValueError as exc:
+        raise RuntimeError(f"VISION_UNAVAILABLE: {str(exc)[:200]}")
+    except Exception as exc:
+        raise RuntimeError(f"VISION_UNAVAILABLE: {type(exc).__name__}: {str(exc)[:200]}".strip())

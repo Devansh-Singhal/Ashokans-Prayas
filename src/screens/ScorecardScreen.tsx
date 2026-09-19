@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { WardScorecard } from '../types';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Ticket, WardScorecard } from '../types';
 import { api } from '../services/api';
 import {
   Clock,
@@ -19,12 +19,54 @@ import {
 
 export const ScorecardScreen: React.FC = () => {
   const [scorecard, setScorecard] = useState<WardScorecard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [feedTickets, setFeedTickets] = useState<Ticket[] | null>(null);
+
+  const fetchScorecard = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.getWardScorecard('WARD_DELHI_14');
+      setScorecard(data);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load scorecard');
+    } finally {
+      setLoading(false);
+    }
+    try {
+      const feed = await api.getWardFeed('WARD_DELHI_14', 1, 100);
+      setFeedTickets(feed.tickets);
+    } catch {
+      setFeedTickets(null);
+    }
+  };
 
   useEffect(() => {
-    api.getWardScorecard('WARD_DELHI_14').then(setScorecard).catch(console.error);
+    fetchScorecard();
   }, []);
 
-  if (!scorecard) return null;
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#0F172A" />
+      </View>
+    );
+  }
+
+  if (error || !scorecard) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Could not load scorecard</Text>
+          <Text style={styles.errorBody}>{error || 'No scorecard data available.'}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={fetchScorecard} activeOpacity={0.8}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const getGrade = (score: number) => {
     if (score >= 85) return { letter: 'A', title: 'Exemplary', color: '#10B981', bg: '#DCFCE7' };
@@ -36,6 +78,25 @@ export const ScorecardScreen: React.FC = () => {
 
   const grade = getGrade(scorecard.cleanliness_score);
   const pendingCount = Math.max(0, scorecard.total_tickets - scorecard.resolved_count);
+
+  const pendingAudit = feedTickets
+    ? feedTickets.filter((t) => t.status === 'PROVISIONAL_FIX').length
+    : null;
+
+  const categoryDefs = [
+    { id: 'POTHOLE', name: 'Potholes & Asphalt Craters', color: '#EF4444', icon: <PotholeDefectIcon size={16} color="#EF4444" /> },
+    { id: 'GARBAGE_ACCUMULATION', name: 'Garbage & Refuse Vats', color: '#F59E0B', icon: <WasteAccumulationIcon size={16} color="#F59E0B" /> },
+    { id: 'STREETLIGHT', name: 'Defunct Streetlamps', color: '#EAB308', icon: <StreetlightDefectIcon size={16} color="#EAB308" /> },
+    { id: 'OPEN_DRAIN', name: 'Broken Drainage Slabs', color: '#0284C7', icon: <OpenDrainHazardIcon size={16} color="#0284C7" /> },
+  ];
+  const categoryStats = feedTickets
+    ? categoryDefs.map((c) => {
+        const total = feedTickets.filter((t) => t.category === c.id).length;
+        const resolved = feedTickets.filter((t) => t.category === c.id && t.status === 'RESOLVED').length;
+        const pct = total > 0 ? Math.round((resolved / total) * 100) : 0;
+        return { ...c, pct };
+      })
+    : null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -109,7 +170,7 @@ export const ScorecardScreen: React.FC = () => {
 
         <View style={styles.slaComparisonRow}>
           <View style={styles.slaMetricCol}>
-            <Text style={styles.slaMetricLabel}>Current Ward Average</Text>
+            <Text style={styles.slaMetricLabel}>Median Fix Latency</Text>
             <Text style={styles.slaMetricValue}>{scorecard.avg_resolution_days} Days</Text>
           </View>
           <View style={styles.slaDivider} />
@@ -129,8 +190,8 @@ export const ScorecardScreen: React.FC = () => {
         </View>
 
         <Text style={styles.slaExplainer}>
-          Defects with 5+ endorsements trigger the Municipal Rapid Response SLA. Latency metrics
-          are synchronized daily with Resident Welfare Associations (RWAs).
+          Defects with 5+ endorsements trigger the Municipal Rapid Response SLA. Median latency
+          metrics are synchronized daily with Resident Welfare Associations (RWAs).
         </Text>
       </View>
 
@@ -138,53 +199,25 @@ export const ScorecardScreen: React.FC = () => {
       <View style={styles.categoryCard}>
         <Text style={styles.categoryCardTitle}>Resolution Rate by Hazard Type</Text>
 
-        {/* Potholes */}
-        <View style={styles.catRow}>
-          <View style={styles.catLeft}>
-            <PotholeDefectIcon size={16} color="#EF4444" />
-            <Text style={styles.catName}>Potholes & Asphalt Craters</Text>
+        {(categoryStats ?? [
+          { id: 'POTHOLE', name: 'Potholes & Asphalt Craters', color: '#EF4444', icon: <PotholeDefectIcon size={16} color="#EF4444" />, pct: 40 },
+          { id: 'GARBAGE_ACCUMULATION', name: 'Garbage & Refuse Vats', color: '#F59E0B', icon: <WasteAccumulationIcon size={16} color="#F59E0B" />, pct: 60 },
+          { id: 'STREETLIGHT', name: 'Defunct Streetlamps', color: '#EAB308', icon: <StreetlightDefectIcon size={16} color="#EAB308" />, pct: 25 },
+          { id: 'OPEN_DRAIN', name: 'Broken Drainage Slabs', color: '#0284C7', icon: <OpenDrainHazardIcon size={16} color="#0284C7" />, pct: 33 },
+        ]).map((c) => (
+          <View key={c.id}>
+            <View style={styles.catRow}>
+              <View style={styles.catLeft}>
+                {c.icon}
+                <Text style={styles.catName}>{c.name}</Text>
+              </View>
+              <Text style={styles.catPercent}>{c.pct}% Fixed</Text>
+            </View>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${c.pct}%`, backgroundColor: c.color }]} />
+            </View>
           </View>
-          <Text style={styles.catPercent}>40% Fixed</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: '40%', backgroundColor: '#EF4444' }]} />
-        </View>
-
-        {/* Garbage */}
-        <View style={styles.catRow}>
-          <View style={styles.catLeft}>
-            <WasteAccumulationIcon size={16} color="#F59E0B" />
-            <Text style={styles.catName}>Garbage & Refuse Vats</Text>
-          </View>
-          <Text style={styles.catPercent}>60% Fixed</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: '60%', backgroundColor: '#F59E0B' }]} />
-        </View>
-
-        {/* Streetlights */}
-        <View style={styles.catRow}>
-          <View style={styles.catLeft}>
-            <StreetlightDefectIcon size={16} color="#EAB308" />
-            <Text style={styles.catName}>Defunct Streetlamps</Text>
-          </View>
-          <Text style={styles.catPercent}>25% Fixed</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: '25%', backgroundColor: '#EAB308' }]} />
-        </View>
-
-        {/* Open Drains */}
-        <View style={styles.catRow}>
-          <View style={styles.catLeft}>
-            <OpenDrainHazardIcon size={16} color="#0284C7" />
-            <Text style={styles.catName}>Broken Drainage Slabs</Text>
-          </View>
-          <Text style={styles.catPercent}>33% Fixed</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: '33%', backgroundColor: '#0284C7' }]} />
-        </View>
+        ))}
       </View>
 
       {/* 5. Citizen Action Notice */}
@@ -195,8 +228,9 @@ export const ScorecardScreen: React.FC = () => {
         <View style={styles.calloutTextGroup}>
           <Text style={styles.calloutTitle}>Help improve Ward 14&apos;s score</Text>
           <Text style={styles.calloutBody}>
-            1 contractor repair on 80ft Road is currently pending civilian audit. Verify it in the
-            feed to release points and raise our index.
+            {pendingAudit !== null
+              ? `${pendingAudit} contractor repair(s) pending civilian audit. Verify in the feed to release points and raise our index.`
+              : '1 contractor repair on 80ft Road is currently pending civilian audit. Verify it in the feed to release points and raise our index.'}
           </Text>
         </View>
       </View>
@@ -208,6 +242,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    alignItems: 'center',
+    maxWidth: 340,
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#B91C1C',
+    marginBottom: 4,
+  },
+  errorBody: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryBtn: {
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  retryText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
   content: {
     padding: 16,

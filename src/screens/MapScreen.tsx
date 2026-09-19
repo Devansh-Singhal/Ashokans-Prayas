@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   useWindowDimensions,
   Platform,
+  Alert,
 } from 'react-native';
 import { MapPin, Navigation, ExternalLink, ShieldCheck } from 'lucide-react-native';
 import { Ticket, TicketStatus } from '../types';
@@ -16,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { InteractiveMap } from '../components/InteractiveMap';
 import { StatusBadge } from '../components/StatusBadge';
 import { SeverityMeter } from '../components/SeverityMeter';
-import { calculateHaversineDistance } from '../services/location';
+import { calculateHaversineDistance, getCurrentGPS } from '../services/location';
 import {
   ImpactFlameIcon,
   PotholeDefectIcon,
@@ -25,7 +26,7 @@ import {
   OpenDrainHazardIcon,
 } from '../components/CivicIcons';
 
-type FilterType = 'ALL' | 'REPORTED' | 'PROVISIONAL_FIX' | 'RESOLVED';
+type FilterType = 'ALL' | 'REPORTED' | 'PROVISIONAL_FIX' | 'RESOLVED' | 'WEATHER_OCCLUDED';
 
 export const MapScreen: React.FC = () => {
   const { width } = useWindowDimensions();
@@ -34,21 +35,38 @@ export const MapScreen: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
   const [userCoords, setUserCoords] = useState({ latitude: 28.6289, longitude: 77.2065 });
+  const [usingFallback, setUsingFallback] = useState(true);
   const [endorsingMap, setEndorsingMap] = useState<Record<string, boolean>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const inFlight = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     loadTickets();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const gps = await getCurrentGPS();
+        setUserCoords(gps);
+        setUsingFallback(false);
+      } catch {
+        // Keep demo fallback coords
+      }
+    })();
+  }, []);
+
   const loadTickets = async () => {
     try {
+      setLoadError(null);
       const res = await api.getWardFeed('WARD_DELHI_14');
       setTickets(res.tickets);
       if (res.tickets.length > 0 && !selectedTicket) {
         setSelectedTicket(res.tickets[0]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load tickets for map', err);
+      setLoadError(err?.message || 'Failed to load tickets');
     }
   };
 
@@ -63,6 +81,7 @@ export const MapScreen: React.FC = () => {
       reported: tickets.filter((t) => t.status === 'REPORTED').length,
       provisional: tickets.filter((t) => t.status === 'PROVISIONAL_FIX').length,
       resolved: tickets.filter((t) => t.status === 'RESOLVED').length,
+      weather: tickets.filter((t) => t.status === 'WEATHER_OCCLUDED').length,
     };
   }, [tickets]);
 
@@ -82,8 +101,9 @@ export const MapScreen: React.FC = () => {
   };
 
   const handleEndorse = async (ticketId: string) => {
-    if (endorsingMap[ticketId]) return;
-    setEndorsingMap((prev) => ({ ...prev, [ticketId]: true }));
+    if (inFlight.current.has(ticketId)) return;
+    if (endorsingMap[ticketId] === true) return;
+    inFlight.current.add(ticketId);
     try {
       await api.endorseTicket(ticketId, currentUser?.id || 'demo-user');
       setTickets((prev) =>
@@ -92,10 +112,18 @@ export const MapScreen: React.FC = () => {
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket((prev) => (prev ? { ...prev, upvotes: prev.upvotes + 1 } : null));
       }
+      setEndorsingMap((prev) => ({ ...prev, [ticketId]: true }));
     } catch (err) {
-      console.error('Endorsement failed', err);
+      Alert.alert('Endorse failed', 'Could not endorse this ticket. Please try again.');
+    } finally {
+      inFlight.current.delete(ticketId);
+      // endorsingMap stays false unless success set it true; ensure re-enabled after failure
+      setEndorsingMap((prev) => (prev[ticketId] === true ? prev : { ...prev, [ticketId]: false }));
     }
   };
+
+  const formatCoord = (v: number | null | undefined): string =>
+    typeof v === 'number' && Number.isFinite(v) ? v.toFixed(4) : '--';
 
   const selectedDistance = selectedTicket
     ? calculateHaversineDistance(
@@ -180,10 +208,36 @@ export const MapScreen: React.FC = () => {
               Verified ({counts.resolved})
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterChip, activeFilter === 'WEATHER_OCCLUDED' && styles.filterChipActive]}
+            onPress={() => setActiveFilter('WEATHER_OCCLUDED')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.filterDot, { backgroundColor: '#38BDF8' }]} />
+            <Text
+              style={[
+                styles.filterChipText,
+                activeFilter === 'WEATHER_OCCLUDED' && styles.filterChipTextActive,
+              ]}
+            >
+              Submerged ({counts.weather})
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
 
       {/* 2. Interactive Map Viewport with Zero-Shift Pins */}
+      {usingFallback && (
+        <View style={styles.fallbackBanner}>
+          <Text style={styles.fallbackText}>Demo location — enable GPS for live audit</Text>
+        </View>
+      )}
+      {tickets.length === 0 && loadError && (
+        <TouchableOpacity style={styles.retryBanner} onPress={loadTickets} activeOpacity={0.8}>
+          <Text style={styles.retryBannerText}>Could not load map tickets. Tap to retry.</Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.mapViewport}>
         <InteractiveMap
           tickets={filteredTickets}
@@ -234,7 +288,7 @@ export const MapScreen: React.FC = () => {
                   {selectedDistance !== null
                     ? `${selectedDistance < 1000 ? `${Math.round(selectedDistance)}m` : `${(selectedDistance / 1000).toFixed(1)}km`} away`
                     : 'Ward 14'}
-                  {' • '}{selectedTicket.latitude.toFixed(4)}, {selectedTicket.longitude.toFixed(4)}
+                  {' • '}{formatCoord(selectedTicket.latitude)}, {formatCoord(selectedTicket.longitude)}
                 </Text>
               </View>
 
@@ -255,7 +309,7 @@ export const MapScreen: React.FC = () => {
                 endorsingMap[selectedTicket.id] && styles.endorseButtonDisabled,
               ]}
               onPress={() => handleEndorse(selectedTicket.id)}
-              disabled={endorsingMap[selectedTicket.id]}
+              disabled={endorsingMap[selectedTicket.id] === true}
               activeOpacity={0.8}
             >
               <ImpactFlameIcon size={16} color="#FFFFFF" fill="#FFFFFF" />
@@ -461,5 +515,29 @@ const styles = StyleSheet.create({
     color: '#A7F3D0',
     fontSize: 11,
     fontWeight: '700',
+  },
+  fallbackBanner: {
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  fallbackText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#92400E',
+    textAlign: 'center',
+  },
+  retryBanner: {
+    backgroundColor: '#1E293B',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  retryBannerText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#38BDF8',
+    textAlign: 'center',
   },
 });

@@ -61,9 +61,11 @@ export function formatDistance(meters: number): string {
 }
 
 /**
- * Request permission and get current device GPS position
+ * Detailed GPS lookup returning the coordinates plus a flag indicating
+ * whether the result is a fallback (permission denied / unavailable).
+ * Screens should migrate to this; getCurrentGPS() is kept for compat.
  */
-export async function getCurrentGPS(): Promise<Coordinates> {
+export async function getCurrentGPSDetailed(): Promise<{ coords: Coordinates; isFallback: boolean }> {
   try {
     const Location = await import('expo-location');
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -72,8 +74,11 @@ export async function getCurrentGPS(): Promise<Coordinates> {
         accuracy: Location.Accuracy.Balanced,
       });
       return {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
+        coords: {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        },
+        isFallback: false,
       };
     }
   } catch (err) {
@@ -82,7 +87,18 @@ export async function getCurrentGPS(): Promise<Coordinates> {
 
   // Default reference coordinate (e.g. Connaught Place / Ward 14 Delhi)
   return {
-    latitude: 28.6289,
-    longitude: 77.2065,
+    coords: {
+      latitude: 28.6289,
+      longitude: 77.2065,
+    },
+    isFallback: true,
   };
+}
+
+/**
+ * Request permission and get current device GPS position
+ */
+export async function getCurrentGPS(): Promise<Coordinates> {
+  const { coords } = await getCurrentGPSDetailed();
+  return coords;
 }

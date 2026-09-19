@@ -15,7 +15,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
         await db.execute(select(User).where(User.phone_number == body.phone))
     ).scalar_one_or_none()
     if existing:
-        return {"user_id": existing.id, "consent_status": existing.consent_status}
+        return {"user_id": existing.id, "consent_status": existing.consent_status, "public_handle": existing.public_handle, "parent_consent_link": None}
 
     if body.is_under_18 and not body.parent_phone:
         raise HTTPException(status_code=422, detail="parent_phone required for under-18 users")
@@ -40,7 +40,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
         db.add(
             ParentConsent(user_id=user.id, token=token, expires_at=consent_expiry())
         )
-        consent_link = f"https://api.civicfeed.org/auth/parent-consent?token={token}"
+        consent_link = f"https://api.civicfeed.org/api/v1/auth/verify-parent-consent?token={token}"
 
     await db.commit()
     return {
@@ -60,7 +60,10 @@ async def verify_parent_consent(token: str, db: AsyncSession = Depends(get_db)):
     ).scalar_one_or_none()
     if not consent or consent.is_used:
         raise HTTPException(status_code=400, detail="Invalid or used token")
-    if consent.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+    exp = consent.expires_at
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if exp < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Token expired")
 
     user = await db.get(User, consent.user_id)

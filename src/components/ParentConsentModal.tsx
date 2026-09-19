@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ShieldCheck, Smartphone, CheckCircle } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
@@ -6,12 +6,20 @@ import { useAuth } from '../context/AuthContext';
 export const ParentConsentModal: React.FC = () => {
   const { isParentConsentModalVisible, setParentConsentModalVisible, simulateParentApproval, currentUser } = useAuth();
   const [isApproving, setIsApproving] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   if (!isParentConsentModalVisible) return null;
 
   const handleSimulate = async () => {
     setIsApproving(true);
-    setTimeout(async () => {
+    timerRef.current = setTimeout(async () => {
+      // Proceed regardless: the modal may have been dismissed while waiting.
       await simulateParentApproval();
       setIsApproving(false);
     }, 800);
@@ -31,7 +39,7 @@ export const ParentConsentModal: React.FC = () => {
           </Text>
 
           <View style={styles.phoneBox}>
-            <Text style={styles.phoneText}>{currentUser.parent_phone_number || '+91 98999 88877'}</Text>
+            <Text style={styles.phoneText}>{currentUser.parent_phone_number || '+919899988877'}</Text>
           </View>
 
           <Text style={styles.notice}>

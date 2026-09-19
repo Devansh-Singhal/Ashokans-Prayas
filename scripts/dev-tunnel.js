@@ -27,9 +27,9 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PORT = process.env.EXPO_PORT || '8081';
 const API_PORT = process.env.API_PORT || '8000';
-const CLOUDFLARED = process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared';
+const CLOUDFLARED = process.env.CLOUDFLARED_PATH || (process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared');
 const EXPO_CLI = path.join(ROOT, 'node_modules', 'expo', 'bin', 'cli');
-const VENV_PYTHON = path.join(
+const VENV_PYTHON = process.env.BACKEND_PYTHON || path.join(
   ROOT,
   'backend',
   '.venv',
@@ -42,6 +42,13 @@ const CONNECTED_RE = /Registered tunnel connection/i;
 const argv = process.argv.slice(2);
 const flagged = new Set();
 function takeFlag(name) {
+  const prefixed = name + '=';
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i].startsWith(prefixed)) {
+      flagged.add(i);
+      return argv[i].slice(prefixed.length);
+    }
+  }
   const i = argv.indexOf(name);
   if (i === -1) return null;
   flagged.add(i);
@@ -203,7 +210,10 @@ function startTunnel({ port, host, label }) {
       );
     });
 
-    const timer = setTimeout(() => reject(new Error('Tunnel did not come up within 60s.')), 60000);
+    const timer = setTimeout(() => {
+      try { proc.kill(); } catch (_) {}
+      reject(new Error('Tunnel did not come up within 60s.'));
+    }, 60000);
 
     let settled = false;
     const ready = host ? CONNECTED_RE : QUICK_URL_RE;
@@ -228,6 +238,9 @@ function startTunnel({ port, host, label }) {
 
 async function startTunnels() {
   if (hostname) {
+    if (!apiHostname) {
+      console.warn('WARNING: named mode without --api-hostname: API URL will be localhost-only, unusable on device');
+    }
     // One `cloudflared tunnel run` already routes every hostname in config.yml.
     const metroUrl = await startTunnel({ port: PORT, host: hostname, label: hostname });
     return { metroUrl, apiUrl: apiHostname ? `https://${apiHostname}` : null };

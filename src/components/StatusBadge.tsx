@@ -55,7 +55,11 @@ export const StatusBadge: React.FC<Props> = ({ status }) => {
   const meta = getMeta();
 
   return (
-    <View style={[styles.badge, { backgroundColor: meta.bg, borderColor: meta.border }]}>
+    <View
+      style={[styles.badge, { backgroundColor: meta.bg, borderColor: meta.border }]}
+      accessibilityLabel={`Status ${meta.label}`}
+      accessible={true}
+    >
       <View style={[styles.dot, { backgroundColor: meta.dot }]} />
       <Text style={[styles.label, { color: meta.text }]}>{meta.label}</Text>
     </View>

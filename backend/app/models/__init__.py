@@ -93,7 +93,18 @@ class Verification(Base):
 class VerificationPair(Base):
     __tablename__ = "verification_pairs"
 
+    # NOTE: unordered convention — server always uses tuple(sorted([auditor_id, reporter_id]))
+    # for lookups/inserts so (A,B) and (B,A) share one row, even though the schema
+    # columns remain nominally directed as auditor_id/reporter_id.
     auditor_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     reporter_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     pairing_count: Mapped[int] = mapped_column(Integer, default=1)
     last_verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Endorsement(Base):
+    __tablename__ = "endorsements"
+
+    ticket_id: Mapped[str] = mapped_column(String(36), ForeignKey("tickets.id"), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

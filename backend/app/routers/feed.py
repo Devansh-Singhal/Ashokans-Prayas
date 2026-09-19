@@ -47,6 +47,9 @@ async def ward_feed(
                 "resolution_photo_url": t.resolution_photo_url,
                 "ward_id": t.ward_id,
                 "created_at": t.created_at.isoformat() if t.created_at else None,
+                "reporter_id": t.reporter_id,
+                "is_commercial_adjacent": t.is_commercial_adjacent,
+                "resolved_at": t.resolved_at.isoformat() if t.resolved_at else None,
             }
             for t in rows
         ],

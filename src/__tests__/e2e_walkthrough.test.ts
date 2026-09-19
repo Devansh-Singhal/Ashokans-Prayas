@@ -69,7 +69,7 @@ async function runStageDemoWalkthrough() {
 
   // 4. MUNICIPAL WORKER UPLOADS FIX
   console.log("\nSTEP 4: Municipal contractor uploads patch photo...");
-  const fixResult = await api.uploadProvisionalFix(newTicket.id, sampleCleanPhoto);
+  const fixResult = await api.uploadProvisionalFix(newTicket.id, sampleCleanPhoto, personaRahul.id, reportLat, reportLon);
   assert(fixResult.status === "PROVISIONAL_FIX", "Status must be PROVISIONAL_FIX");
   console.log("   [OK] Fix photo uploaded! Status shifted to PROVISIONAL_FIX (Awaiting passerby audit).");
 
@@ -80,7 +80,7 @@ async function runStageDemoWalkthrough() {
   assert(dist <= 50, "Auditor must be within 50m (measured: " + dist + "m)");
   console.log("   - GPS check: Auditor is " + dist + "m away (Within 50m geofence).");
 
-  const auditStranger = await api.verifyTicket(newTicket.id, sampleCleanPhoto, personaAnjali.id);
+  const auditStranger = await api.verifyTicket(newTicket.id, sampleCleanPhoto, personaAnjali.id, auditorCoords.latitude, auditorCoords.longitude);
   assert(auditStranger.credited_points === 150, "Stranger must get 150 points, got " + auditStranger.credited_points);
   assert(auditStranger.decay_percentage === 0, "Stranger must have 0% decay");
   assert(auditStranger.ticket_status === "RESOLVED", "Ticket must be RESOLVED");
@@ -89,30 +89,34 @@ async function runStageDemoWalkthrough() {
 
   // 6. COLLUSION ATTACK DEMO (THE MONEY MOMENT)
   console.log("\nSTEP 6: Collusion Attack Simulation (Roommate Rohan tries to farm points with Rahul)...");
+  const t2Lat = baseLat + 0.005;
+  const t2Lon = baseLon + 0.005;
   const ticket2 = await api.reportTicket(
     sampleReportPhoto,
-    baseLat + 0.005,
-    baseLon + 0.005,
+    t2Lat,
+    t2Lon,
     wardId,
     personaRahul.id
   );
-  await api.uploadProvisionalFix(ticket2.id, sampleCleanPhoto);
+  await api.uploadProvisionalFix(ticket2.id, sampleCleanPhoto, personaRahul.id, t2Lat, t2Lon);
 
   // Persona C verifies Persona A (1st time)
-  const auditColluder1 = await api.verifyTicket(ticket2.id, sampleCleanPhoto, personaRohan.id);
+  const auditColluder1 = await api.verifyTicket(ticket2.id, sampleCleanPhoto, personaRohan.id, t2Lat + 0.0001, t2Lon + 0.0001);
   console.log("   - Pairing 1: Rohan verifies Rahul -> +" + auditColluder1.credited_points + " pts (Pair count: " + auditColluder1.pairing_count + ")");
 
   // Persona A reports ticket 3, Persona C verifies again (Collusion pattern detected!)
+  const t3Lat = baseLat + 0.010;
+  const t3Lon = baseLon + 0.010;
   const ticket3 = await api.reportTicket(
     sampleReportPhoto,
-    baseLat + 0.010,
-    baseLon + 0.010,
+    t3Lat,
+    t3Lon,
     wardId,
     personaRahul.id
   );
-  await api.uploadProvisionalFix(ticket3.id, sampleCleanPhoto);
+  await api.uploadProvisionalFix(ticket3.id, sampleCleanPhoto, personaRahul.id, t3Lat, t3Lon);
 
-  const auditColluder2 = await api.verifyTicket(ticket3.id, sampleCleanPhoto, personaRohan.id);
+  const auditColluder2 = await api.verifyTicket(ticket3.id, sampleCleanPhoto, personaRohan.id, t3Lat + 0.0001, t3Lon + 0.0001);
   console.log("   [ALERT] Pairing 2: Repeated collusion detected!");
   console.log("   - Base reward: 150 pts");
   console.log("   - Credited points decayed to: +" + auditColluder2.credited_points + " pts (-" + auditColluder2.decay_percentage + "% decay)");

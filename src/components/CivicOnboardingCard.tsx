@@ -4,6 +4,7 @@ import { X, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react-native';
 import { StepSpotIcon, StepEscalateIcon, StepAuditIcon } from './CivicIcons';
 
 export const CivicOnboardingCard: React.FC = () => {
+  // TODO: persist dismiss via AsyncStorage
   const [isDismissed, setIsDismissed] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -161,6 +162,10 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 8,
     backgroundColor: '#F8FAFC',
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   stepsContainer: {
     marginTop: 14,
