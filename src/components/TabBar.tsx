@@ -18,6 +18,14 @@ export function TabBar() {
   // Get the current tab by checking the last segment
   const currentTab = segments[segments.length - 1] || 'index';
 
+  const handleTabPress = (tabName: string) => {
+    if (tabName === 'index') {
+      router.push('/');
+    } else {
+      router.push(`/${tabName}` as any);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {TABS.map((tab) => {
@@ -27,7 +35,7 @@ export function TabBar() {
         return (
           <Pressable
             key={tab.name}
-            onPress={() => router.push(`/${tab.name}`)}
+            onPress={() => handleTabPress(tab.name)}
             style={styles.tabItem}
           >
             <View
