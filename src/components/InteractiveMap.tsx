@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Ticket } from '../types';
+import { MAPTILER_KEY } from '../services/api';
 
 // Shared area config consumed by both the web Leaflet map and the native
 // react-native-maps implementation.
@@ -76,6 +77,8 @@ export function InteractiveMap({
   const generateLeafletHtml = () => {
     const centerLat = selectedTicket?.latitude ?? fallbackCenter.latitude;
     const centerLng = selectedTicket?.longitude ?? fallbackCenter.longitude;
+    const maptilerUrl = `https://api.maptiler.com/maps/streets-v4/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`;
+    const osmFallbackUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     const ticketsData = JSON.stringify(
       tickets.map((t) => ({
@@ -162,9 +165,13 @@ export function InteractiveMap({
 <body>
   <div class="ward-pill">${pillLabel}</div>
   <div id="map"></div>
+  <div id="map-error" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;color:#F8FAFC;font-size:13px;font-weight:600;text-align:center;padding:24px;">Map tiles unavailable. Check connection.</div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="document.getElementById('map-error').style.display='flex'"></script>
   <script>
+    if (typeof L === 'undefined') {
+      document.getElementById('map-error').style.display = 'flex';
+    } else {
     const tickets = ${ticketsData};
     const userLat = ${userCoords.latitude};
     const userLng = ${userCoords.longitude};
@@ -178,12 +185,31 @@ export function InteractiveMap({
       zoomControl: false,
     });
 
-    // CARTO dark_matter tiles match the app chrome; the data is OpenStreetMap.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
+    // MapTiler Streets primary; thresholded OSM fallback if the key is rejected.
+    // A single bad tile never triggers the swap — 4 errors with zero loads do.
+    var mapAttribution = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    var primaryTiles = L.tileLayer('${maptilerUrl}', {
+      attribution: mapAttribution,
       maxZoom: 19,
-    }).addTo(map);
+      crossOrigin: true,
+    });
+    var fallbackTiles = L.tileLayer('${osmFallbackUrl}', {
+      attribution: mapAttribution,
+      maxZoom: 19,
+    });
+    var tileErrors = 0;
+    var tileLoads = 0;
+    var fellBack = false;
+    primaryTiles.on('tileload', function () { tileLoads += 1; });
+    primaryTiles.on('tileerror', function () {
+      tileErrors += 1;
+      if (!fellBack && tileErrors >= 4 && tileLoads === 0) {
+        fellBack = true;
+        map.removeLayer(primaryTiles);
+        fallbackTiles.addTo(map);
+      }
+    });
+    primaryTiles.addTo(map);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -192,6 +218,7 @@ export function InteractiveMap({
     function getPinColor(status) {
       if (status === 'RESOLVED') return '#10B981';
       if (status === 'PROVISIONAL_FIX') return '#F59E0B';
+      if (status === 'WEATHER_OCCLUDED') return '#3B82F6';
       return '#EF4444';
     }
 
@@ -256,6 +283,7 @@ export function InteractiveMap({
         });
       }
     });
+    }
   </script>
 </body>
 </html>`;

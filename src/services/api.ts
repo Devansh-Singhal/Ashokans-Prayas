@@ -34,6 +34,10 @@ export { ExpoFile };
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// MapTiler Streets raster tiles (free-tier demo key committed as default; override
+// per-environment with EXPO_PUBLIC_MAPTILER_KEY). Treated as public — rotate after demo.
+export const MAPTILER_KEY = process.env.EXPO_PUBLIC_MAPTILER_KEY ?? 'NDORbzgPBgzNteLrMF1u';
+
 async function timedFetch(url: string, init?: RequestInit, ms: number = 20000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);

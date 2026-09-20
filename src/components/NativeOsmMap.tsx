@@ -3,6 +3,7 @@ import { View, StyleSheet, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ticket } from '../types';
 import { MapArea } from './InteractiveMap';
+import { MAPTILER_KEY } from '../services/api';
 
 interface Props {
   tickets: Ticket[];
@@ -40,9 +41,11 @@ export const NativeOsmMap: React.FC<Props> = ({
     }))
   );
 
-  // Same self-contained Leaflet page the web build uses, served over OSM +
-  // CARTO tiles inside a WebView so device builds render a real live map
-  // without depending on any native map module being present in Expo Go.
+  // Same self-contained Leaflet page the web build uses, served over MapTiler
+  // Streets (keyed) with a thresholded OSM fallback inside a WebView so device
+  // builds render a real live map without depending on any native map module
+  // being present in Expo Go.
+  const maptilerUrl = `https://api.maptiler.com/maps/streets-v4/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`;
   const leafletHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -76,20 +79,43 @@ export const NativeOsmMap: React.FC<Props> = ({
 <body>
   <div class="ward-pill">${pillLabel}</div>
   <div id="map"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div id="map-error" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;color:#F8FAFC;font-size:13px;font-weight:600;text-align:center;padding:24px;">Map tiles unavailable. Check connection.</div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="document.getElementById('map-error').style.display='flex'"></script>
   <script>
+    if (typeof L === 'undefined') {
+      document.getElementById('map-error').style.display = 'flex';
+    } else {
     var tickets = ${ticketsData};
     var map = L.map('map', { center: [${centerLat}, ${centerLng}], zoom: ${fallbackZoom}, zoomControl: false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
+    var mapAttribution = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    var primaryTiles = L.tileLayer('${maptilerUrl}', {
+      attribution: mapAttribution,
       maxZoom: 19,
-    }).addTo(map);
+      crossOrigin: true,
+    });
+    var fallbackTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: mapAttribution,
+      maxZoom: 19,
+    });
+    var tileErrors = 0;
+    var tileLoads = 0;
+    var fellBack = false;
+    primaryTiles.on('tileload', function () { tileLoads += 1; });
+    primaryTiles.on('tileerror', function () {
+      tileErrors += 1;
+      if (!fellBack && tileErrors >= 4 && tileLoads === 0) {
+        fellBack = true;
+        map.removeLayer(primaryTiles);
+        fallbackTiles.addTo(map);
+      }
+    });
+    primaryTiles.addTo(map);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     function pinColor(status) {
       if (status === 'RESOLVED') return '#10B981';
       if (status === 'PROVISIONAL_FIX') return '#F59E0B';
+      if (status === 'WEATHER_OCCLUDED') return '#3B82F6';
       return '#EF4444';
     }
     function svgIcon(status, isSelected) {
@@ -150,6 +176,7 @@ export const NativeOsmMap: React.FC<Props> = ({
         }
       } catch (err) {}
     });
+    }
     true;
   </script>
 </body>
@@ -204,7 +231,7 @@ export const NativeOsmMap: React.FC<Props> = ({
         )}
       />
       <View style={styles.osmCredit}>
-        <Text style={styles.osmCreditText}>© OpenStreetMap contributors © CARTO</Text>
+        <Text style={styles.osmCreditText}>© MapTiler © OpenStreetMap contributors</Text>
       </View>
     </View>
   );
