@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 from io import BytesIO
 
@@ -10,6 +11,8 @@ PROVIDER_URL = os.environ.get(
     "DEEPSEEK_URL", "https://api.commandcode.ai/provider/v1/chat/completions"
 )
 PROVIDER_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek/deepseek-v4.1-flash")
+
+logger = logging.getLogger("civicfeed.vision")
 
 SYSTEM_PROMPT = """You are the CivicFeed Vision & Municipal Governance Intelligence Engine.
 Analyze the provided urban infrastructure photograph.
@@ -65,7 +68,7 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
     wet = "wet" in name or "rain" in name or "flood" in name or "submerged" in name
     vendor = "vendor" in name or "shop" in name
 
-    if "pothole" in name or "pothol" in name:
+    if "pothole" in name or "pothol" in name or "crack" in name or "asphalt" in name:
         return {
             "category": "POTHOLE",
             "target_department": "Public Works Department (State PWD) - Arterial Road Division",
@@ -85,11 +88,11 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
             "reasoning_summary": "Pothole detected on primary roadway.",
         }
 
-    if "garbage" in name or "waste" in name or "dump" in name:
+    if "garbage" in name or "waste" in name or "dump" in name or "bottle" in name or "plastic" in name or "trash" in name or "litter" in name:
         return {
             "category": "GARBAGE_ACCUMULATION",
-            "target_department": "MCD Department of Environment Management Services (DEMS - Sanitation)",
-            "department_reasoning": "Heuristic: Solid waste accumulation on public curb falls under municipal ward sanitation (MCD DEMS).",
+            "target_department": "MCL Sanitation & Solid Waste Management Division",
+            "department_reasoning": "Heuristic: Solid waste accumulation on public curb falls under MCL Sanitation & Solid Waste Management.",
             "confidence": 0.88,
             "severity": 3,
             "severity_justification": "Overflowing waste heap obstructing pedestrian access and attracting stray animals.",
@@ -105,11 +108,11 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
             "reasoning_summary": "Solid waste heap on municipal curb.",
         }
 
-    if "light" in name or "lamp" in name:
+    if "light" in name or "lamp" in name or "pole" in name:
         return {
             "category": "STREETLIGHT",
-            "target_department": "Electricity Distribution Utility (BSES / Tata Power / MCD Electrical)",
-            "department_reasoning": "Heuristic: Public lighting infrastructure falls under the municipal electrical division and regional power distribution utility.",
+            "target_department": "Punjab State Power Corporation Limited (PSPCL) - Electrical Grid",
+            "department_reasoning": "Heuristic: Public lighting infrastructure falls under PSPCL and the municipal electrical grid.",
             "confidence": 0.85,
             "severity": 3,
             "severity_justification": "Defunct streetlighting creates pedestrian safety hazards and dark accident zones after sundown.",
@@ -125,7 +128,7 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
             "reasoning_summary": "Non-functional streetlighting pole.",
         }
 
-    if "drain" in name or "sewer" in name or "manhole" in name:
+    if "drain" in name or "sewer" in name or "manhole" in name or "waterlog" in name:
         return {
             "category": "OPEN_DRAIN",
             "target_department": "Punjab Water Supply & Sewerage Board (PWSSB) / Municipal Drainage",
@@ -147,7 +150,7 @@ def heuristic_classify(filename: str, content: bytes) -> dict:
 
     return {
         "category": "UNKNOWN",
-        "target_department": "Municipal Corporation (MCD) - General Public Works Desk",
+        "target_department": "Municipal Corporation Ludhiana (MCL) - General Public Works Desk",
         "department_reasoning": "General municipal jurisdiction pending manual civic inspector review.",
         "confidence": 0.50,
         "severity": 2,
@@ -194,7 +197,7 @@ def sanitize(result: dict) -> dict:
         result["bounding_boxes_to_blur"] = []
 
     result["target_department"] = str(
-        result.get("target_department") or "Municipal Corporation (MCD) - Road Maintenance"
+        result.get("target_department") or "Municipal Corporation Ludhiana (MCL) - Road Maintenance"
     )
     result["department_reasoning"] = str(
         result.get("department_reasoning") or "Jurisdiction mapped based on road infrastructure classification."
@@ -214,7 +217,10 @@ def sanitize(result: dict) -> dict:
 async def classify_image(filename: str, content: bytes, content_type: str = "image/jpeg") -> dict:
     api_key = os.environ.get("COMMANDCODE_API_KEY")
     if not api_key:
-        return sanitize(heuristic_classify(filename, content))
+        logger.info("vision=heuristic reason=no_api_key file=%s", filename)
+        result = sanitize(heuristic_classify(filename, content))
+        result["source"] = "heuristic"
+        return result
 
     try:
         with Image.open(BytesIO(content)) as im:
@@ -257,22 +263,20 @@ async def classify_image(filename: str, content: bytes, content_type: str = "ima
     }
 
     last_error: str = "unknown error"
-    async with httpx.AsyncClient(timeout=35) as client:
-        for attempt in range(2):
-            try:
-                r = await client.post(
-                    PROVIDER_URL,
-                    headers=headers,
-                    json=payload,
-                )
-                r.raise_for_status()
-                break
-            except Exception as exc:
-                last_error = f"{type(exc).__name__}: {exc}".strip()[:200]
-                if attempt == 0:
-                    continue
-                # If network fails twice, fall back gracefully to heuristic classification
-                return sanitize(heuristic_classify(filename, content))
+    async with httpx.AsyncClient(timeout=25) as client:
+        try:
+            r = await client.post(
+                PROVIDER_URL,
+                headers=headers,
+                json=payload,
+            )
+            r.raise_for_status()
+        except Exception as exc:
+            last_error = f"{type(exc).__name__}: {exc}".strip()[:200]
+            logger.warning("vision=heuristic reason=request_failed error=%s file=%s", last_error, filename)
+            result = sanitize(heuristic_classify(filename, content))
+            result["source"] = "heuristic"
+            return result
 
     try:
         data = r.json()
@@ -282,8 +286,16 @@ async def classify_image(filename: str, content: bytes, content_type: str = "ima
             text = msg.get("reasoning", "") or msg.get("reasoning_content", "") or ""
         start, end = text.find("{"), text.rfind("}")
         if start < 0 or end <= start:
-            return sanitize(heuristic_classify(filename, content))
+            logger.warning("vision=heuristic reason=unparseable_reply file=%s body=%.200s", filename, text)
+            result = sanitize(heuristic_classify(filename, content))
+            result["source"] = "heuristic"
+            return result
         parsed = json.loads(text[start : end + 1])
-        return sanitize(parsed)
-    except Exception:
-        return sanitize(heuristic_classify(filename, content))
+        result = sanitize(parsed)
+        result["source"] = "model"
+        return result
+    except Exception as exc:
+        logger.warning("vision=heuristic reason=parse_failed error=%s file=%s", type(exc).__name__, filename)
+        result = sanitize(heuristic_classify(filename, content))
+        result["source"] = "heuristic"
+        return result

@@ -16,6 +16,10 @@ COMMANDCODE_API_KEY=<your key>
 ```
 Without the key, a deterministic filename-based heuristic runs so the full flow is
 testable offline. `.env` is loaded automatically at startup via `python-dotenv`.
+Heuristic-only mode is labeled, not verified: `classify_image` returns
+`"source": "heuristic"` (vs `"model"`), and `/report` returns
+`"verified_by_photo": false` unless the model classified at >= 0.60 confidence.
+Copy `backend/.env.example` to `.env` and fill in the key for real detection.
 
 ## Endpoints
 - `POST /api/v1/auth/register`

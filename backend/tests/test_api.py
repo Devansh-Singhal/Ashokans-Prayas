@@ -472,3 +472,74 @@ async def test_analyze_photo_endpoint(client):
     assert "severity" in ai
     assert "suggested_title" in ai
     assert "suggested_description" in ai
+    assert ai["source"] == "heuristic"
+
+
+@pytest.mark.asyncio
+async def test_heuristic_bottles_returns_garbage(client):
+    res = await client.post(
+        "/api/v1/tickets/analyze",
+        files=photo("bottles.jpg"),
+    )
+    assert res.status_code == 200
+    ai = res.json()["ai"]
+    assert ai["category"] == "GARBAGE_ACCUMULATION"
+    assert ai["confidence"] >= 0.60
+    assert ai["source"] == "heuristic"
+
+
+@pytest.mark.asyncio
+async def test_heuristic_camera_filename_returns_unknown(client):
+    res = await client.post(
+        "/api/v1/tickets/analyze",
+        files=photo("IMG_1234.jpg"),
+    )
+    assert res.status_code == 200
+    ai = res.json()["ai"]
+    assert ai["category"] == "UNKNOWN"
+    assert ai["source"] == "heuristic"
+
+
+@pytest.mark.asyncio
+async def test_low_confidence_with_department_accepted(client):
+    reg = await client.post(
+        "/api/v1/auth/register", json={"phone": "+915555555555", "is_under_18": False}
+    )
+    uid = reg.json()["user_id"]
+    r = await client.post(
+        "/api/v1/tickets/report",
+        files=photo("IMG_1234.jpg"),
+        data={
+            "latitude": "30.8893",
+            "longitude": "75.8490",
+            "ward_id": "WARD_LUDHIANA_14",
+            "reporter_id": uid,
+            "target_department": "MCL Sanitation & Solid Waste Management Division",
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert "needs_clarification" not in body
+    assert body["category"] == "GARBAGE_ACCUMULATION"
+    assert body["verified_by_photo"] is False
+
+
+@pytest.mark.asyncio
+async def test_low_confidence_without_department_needs_clarification(client):
+    reg = await client.post(
+        "/api/v1/auth/register", json={"phone": "+916666666666", "is_under_18": False}
+    )
+    uid = reg.json()["user_id"]
+    r = await client.post(
+        "/api/v1/tickets/report",
+        files=photo("IMG_9999.jpg"),
+        data={
+            "latitude": "30.8895",
+            "longitude": "75.8492",
+            "ward_id": "WARD_LUDHIANA_14",
+            "reporter_id": uid,
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body.get("needs_clarification") is True

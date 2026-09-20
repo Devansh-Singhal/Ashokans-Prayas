@@ -53,6 +53,32 @@ async def require_active_reporter(db: AsyncSession, reporter_id: str) -> User:
     return user
 
 
+DEPARTMENT_CATEGORY_HINTS: list[tuple[str, str]] = [
+    ("sanitation", "GARBAGE_ACCUMULATION"),
+    ("solid waste", "GARBAGE_ACCUMULATION"),
+    ("dems", "GARBAGE_ACCUMULATION"),
+    ("pspcl", "STREETLIGHT"),
+    ("power", "STREETLIGHT"),
+    ("electrical", "STREETLIGHT"),
+    ("pwssb", "OPEN_DRAIN"),
+    ("sewerage", "OPEN_DRAIN"),
+    ("drainage", "OPEN_DRAIN"),
+    ("pwd", "POTHOLE"),
+    ("road maintenance", "POTHOLE"),
+    ("footpath", "FOOTPATH_DAMAGE"),
+    ("pedestrian", "FOOTPATH_DAMAGE"),
+    ("nhai", "POTHOLE"),
+]
+
+
+def category_hint_from_department(target_department: str | None) -> str | None:
+    lowered = (target_department or "").lower()
+    for hint, category in DEPARTMENT_CATEGORY_HINTS:
+        if hint in lowered:
+            return category
+    return None
+
+
 @router.post("/analyze")
 async def analyze_ticket_photo(
     photo: UploadFile = File(...),
@@ -113,15 +139,23 @@ async def report_ticket(
             pass
         raise HTTPException(status_code=503, detail="Vision service unavailable, try again later")
     if ai.get("confidence", 0) < 0.60:
-        try:
-            os.remove(path)
-        except Exception:
-            pass
-        return {
-            "needs_clarification": True,
-            "message": "Low confidence. Please add community clarification.",
-            "ai": ai,
-        }
+        hinted = category_hint_from_department(target_department)
+        if hinted:
+            ai["category"] = hinted
+            ai["target_department"] = target_department or ai.get("target_department")
+            ai["verified_by_photo"] = False
+        else:
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+            return {
+                "needs_clarification": True,
+                "message": "Low confidence. Please add community clarification.",
+                "ai": ai,
+            }
+    else:
+        ai["verified_by_photo"] = ai.get("source") == "model" and ai.get("confidence", 0) >= 0.60
 
     existing = (
         await db.execute(
@@ -172,6 +206,7 @@ async def report_ticket(
         "severity_justification": ai.get("severity_justification"),
         "status": ticket.status,
         "escrow_points": REPORT_ESCROW_POINTS,
+        "verified_by_photo": ai.get("verified_by_photo", False),
         "privacy_blur": ai.get("bounding_boxes_to_blur", []),
         "commercial_adjacent": ticket.is_commercial_adjacent,
         "suggested_title": custom_title or ai.get("suggested_title"),

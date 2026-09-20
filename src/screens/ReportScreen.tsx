@@ -89,6 +89,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filedInfo, setFiledInfo] = useState<string | null>(null);
+  const [notPhotoVerified, setNotPhotoVerified] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -135,6 +136,8 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
       const msg = err?.message || '';
       if (msg.includes('Vision service unavailable') || msg.includes('503')) {
         setErrorMessage('DeepSeek vision service temporarily busy. You can still confirm details and publish.');
+      } else if (msg.includes('Failed to fetch') || msg.includes('timed out') || msg.includes('Network request failed')) {
+        setErrorMessage('Cannot reach the API. Set EXPO_PUBLIC_API_URL to your tunnel or server URL.');
       } else {
         setErrorMessage(msg || 'AI analysis failed. You can manually enter details.');
       }
@@ -215,6 +218,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
       );
 
       setIsSuccess(true);
+      setNotPhotoVerified(res?.verified_by_photo === false);
       setFiledInfo(
         `${String(res.category || analysisResult?.category || 'DEFECT').replace(/_/g, ' ')} · ${selectedDepartment.split('-')[0]} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
       );
@@ -236,6 +240,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
         setPhotoKind(null);
         setAnalysisResult(null);
         setFiledInfo(null);
+        setNotPhotoVerified(false);
       }, 5000);
     } catch (err: any) {
       const msg: string = err?.message || '';
@@ -507,6 +512,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
             <Text style={styles.successSub}>
               +50 Escrow Points Awarded. Routed to {selectedDepartment.split('-')[0]} for SLA tracking.
               {filedInfo ? `\n${filedInfo}` : ''}
+              {notPhotoVerified ? '\nCategory set from your selection. Photo not verified.' : ''}
             </Text>
           </View>
         </View>
