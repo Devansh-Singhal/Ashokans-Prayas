@@ -11,7 +11,8 @@
       "icon": "./assets/expo.icon",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to use the camera to capture civic issue evidence.",
-        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access photos to attach civic evidence."
+        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access photos to attach civic evidence.",
+        "NSMotionUsageDescription": "Allow $(PRODUCT_NAME) to use motion sensors for the pothole detection demo."
       }
     },
     "android": {

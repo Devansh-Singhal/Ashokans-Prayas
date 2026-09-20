@@ -26,6 +26,7 @@ export default function RootLayout() {
             <Tabs.Screen name="report" options={{ title: 'Report' }} />
             <Tabs.Screen name="scorecard" options={{ title: 'Ward' }} />
             <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+            <Tabs.Screen name="pothole-demo" options={{ href: null, title: 'Pothole Demo' }} />
           </Tabs>
           <ParentConsentModal />
         </SafeAreaView>

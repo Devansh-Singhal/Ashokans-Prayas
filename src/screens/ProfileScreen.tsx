@@ -1,4 +1,5 @@
-import { Award, CheckCircle2, Download, Eye, FileText, ShieldCheck } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Activity, Award, CheckCircle2, Download, Eye, FileText, ShieldCheck } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { OfficialCertificateModal } from '../components/OfficialCertificateModal';
@@ -12,6 +13,7 @@ import { certificateEligibility, groupContributions } from '../utils/contributio
 type ProfileTab = 'overview' | 'certificate';
 
 export const ProfileScreen: React.FC = () => {
+  const router = useRouter();
   const { currentUser, currentPersona, contributions } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
   const [serverReports, setServerReports] = useState<Contribution[]>([]);
@@ -169,6 +171,18 @@ export const ProfileScreen: React.FC = () => {
               </Text>
             </View>
           </View>
+
+          {/* Stage demo entry point */}
+          <TouchableOpacity
+            style={styles.demoButton}
+            onPress={() => router.push('/pothole-demo')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Pothole AI Detector stage demo"
+          >
+            <Activity size={18} color={COLORS.navy} />
+            <Text style={styles.demoButtonText}>Pothole AI Detector (Stage Demo)</Text>
+          </TouchableOpacity>
         </>
       ) : (
         <>
@@ -447,6 +461,21 @@ const styles = StyleSheet.create({
   certText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.mist,
+  },
+  demoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.mist,
+    paddingVertical: 14,
+    minHeight: 44,
+    borderRadius: 14,
+    marginTop: 16,
+  },
+  demoButtonText: {
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.navy,
   },
   certificateHolderLabel: {
     ...TYPOGRAPHY.micro,
