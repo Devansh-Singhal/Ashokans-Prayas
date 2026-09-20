@@ -31,6 +31,13 @@ export const COLORS = {
   // Button text on orange must be navy (6.7:1 passes; white on orange fails)
   onOrange: '#0B1B2F',
 
+  // Light neumorphic theme (matches Jawabdari logo: navy #0B1B2F, orange #FF7A00, white)
+  neuBase: '#E9EEF4',
+  neuLight: '#FFFFFF',
+  neuDark: '#B9C2CE',
+  neuText: '#0B1B2F',
+  neuMuted: '#6B7A90',
+
   // Legacy alias (was Figma orange)
   purple: '#FF7A00',
 };

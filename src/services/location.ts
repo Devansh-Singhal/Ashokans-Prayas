@@ -36,14 +36,14 @@ export function calculateHaversineDistance(
 }
 
 /**
- * Checks whether user coordinates are within threshold (default: 50 meters) of target
+ * Checks whether user coordinates are within threshold (default: 5 meters) of target
  */
 export function checkGeofence(
   userLat: number,
   userLon: number,
   targetLat: number,
   targetLon: number,
-  maxMeters: number = 50
+  maxMeters: number = 5
 ): GeofenceResult {
   const dist = calculateHaversineDistance(userLat, userLon, targetLat, targetLon);
   return {

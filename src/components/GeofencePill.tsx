@@ -9,7 +9,7 @@ interface Props {
   maxMeters?: number;
 }
 
-export const GeofencePill: React.FC<Props> = ({ distanceMeters, maxMeters = 50 }) => {
+export const GeofencePill: React.FC<Props> = ({ distanceMeters, maxMeters = 5 }) => {
   const inRange = distanceMeters <= maxMeters;
 
   return (

@@ -190,7 +190,7 @@ export const CivicPostCard: React.FC<Props> = ({
       {/* 5. Geofence Distance Indicator */}
       {canVerify && (
         <View style={styles.geofenceContainer}>
-          <GeofencePill distanceMeters={distance} maxMeters={50} />
+          <GeofencePill distanceMeters={distance} maxMeters={5} />
         </View>
       )}
 
@@ -201,17 +201,17 @@ export const CivicPostCard: React.FC<Props> = ({
             <TouchableOpacity
               style={[
                 styles.verifyButton,
-                distance <= 50 ? styles.verifyButtonActive : styles.verifyButtonDisabled,
+                distance <= 5 ? styles.verifyButtonActive : styles.verifyButtonDisabled,
               ]}
               onPress={() => onVerifyPress(ticket)}
-              disabled={distance > 50}
+              disabled={distance > 5}
               activeOpacity={0.8}
               accessibilityRole="button"
-              accessibilityState={{ disabled: distance > 50 }}
+              accessibilityState={{ disabled: distance > 5 }}
             >
-              <ShieldCheck size={16} color={distance <= 50 ? '#0B1B2F' : '#FFFFFF'} />
-              <Text style={[styles.verifyButtonText, distance > 50 && { color: '#FFFFFF' }]}>
-                {distance <= 50 ? 'Audit fix (+150 pts)' : 'Move within 50m'}
+              <ShieldCheck size={16} color={distance <= 5 ? '#0B1B2F' : '#FFFFFF'} />
+              <Text style={[styles.verifyButtonText, distance > 5 && { color: '#FFFFFF' }]}>
+                {distance <= 5 ? 'Audit fix (+150 pts)' : 'Move within 5m'}
               </Text>
             </TouchableOpacity>
           ) : ticket.status === 'WEATHER_OCCLUDED' ? (

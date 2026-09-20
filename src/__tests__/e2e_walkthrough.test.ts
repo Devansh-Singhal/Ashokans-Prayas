@@ -70,11 +70,11 @@ async function runStageDemoWalkthrough() {
   console.log("   [OK] Fix photo uploaded! Status shifted to PROVISIONAL_FIX (Awaiting passerby audit).");
 
   // 5. STRANGER AUDITS (LEGITIMATE PASS)
-  console.log("\nSTEP 5: Persona B (Stranger Anjali) physically verifies within 50m geofence...");
-    const auditorCoords = { latitude: reportLat + 0.0001, longitude: reportLon + 0.0001 };
+  console.log("\nSTEP 5: Persona B (Stranger Anjali) physically verifies within 5m geofence...");
+    const auditorCoords = { latitude: reportLat + 0.00002, longitude: reportLon + 0.00002 };
   const dist = calculateHaversineDistance(auditorCoords.latitude, auditorCoords.longitude, reportLat, reportLon);
-  assert(dist <= 50, "Auditor must be within 50m (measured: " + dist + "m)");
-  console.log("   - GPS check: Auditor is " + dist + "m away (Within 50m geofence).");
+  assert(dist <= 5, "Auditor must be within 5m (measured: " + dist + "m)");
+  console.log("   - GPS check: Auditor is " + dist + "m away (Within 5m geofence).");
 
   const auditStranger = await api.verifyTicket(newTicket.id, sampleCleanPhoto, personaAnjali.id, auditorCoords.latitude, auditorCoords.longitude);
   assert(auditStranger.credited_points === 150, "Stranger must get 150 points, got " + auditStranger.credited_points);
@@ -97,7 +97,7 @@ async function runStageDemoWalkthrough() {
   await api.uploadProvisionalFix(ticket2.id, sampleCleanPhoto, personaRahul.id, t2Lat, t2Lon);
 
   // Persona C verifies Persona A (1st time)
-  const auditColluder1 = await api.verifyTicket(ticket2.id, sampleCleanPhoto, personaRohan.id, t2Lat + 0.0001, t2Lon + 0.0001);
+  const auditColluder1 = await api.verifyTicket(ticket2.id, sampleCleanPhoto, personaRohan.id, t2Lat + 0.00002, t2Lon + 0.00002);
   console.log("   - Pairing 1: Rohan verifies Rahul -> +" + auditColluder1.credited_points + " pts (Pair count: " + auditColluder1.pairing_count + ")");
 
   // Persona A reports ticket 3, Persona C verifies again (Collusion pattern detected!)
@@ -112,7 +112,7 @@ async function runStageDemoWalkthrough() {
   );
   await api.uploadProvisionalFix(ticket3.id, sampleCleanPhoto, personaRahul.id, t3Lat, t3Lon);
 
-  const auditColluder2 = await api.verifyTicket(ticket3.id, sampleCleanPhoto, personaRohan.id, t3Lat + 0.0001, t3Lon + 0.0001);
+  const auditColluder2 = await api.verifyTicket(ticket3.id, sampleCleanPhoto, personaRohan.id, t3Lat + 0.00002, t3Lon + 0.00002);
   console.log("   [ALERT] Pairing 2: Repeated collusion detected!");
   console.log("   - Base reward: 150 pts");
   console.log("   - Credited points decayed to: +" + auditColluder2.credited_points + " pts (-" + auditColluder2.decay_percentage + "% decay)");

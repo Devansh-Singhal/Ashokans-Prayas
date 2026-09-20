@@ -22,15 +22,15 @@ const mockTicket: Ticket = {
   created_at: new Date().toISOString(),
 };
 
-// 1. Verify distance calculation from 30m away
-const userCoordsNear = { latitude: 30.87877, longitude: 75.8462 };
+// 1. Verify distance calculation from 2m away
+const userCoordsNear = { latitude: 30.87852, longitude: 75.8462 };
 const distNear = calculateHaversineDistance(
   userCoordsNear.latitude,
   userCoordsNear.longitude,
   mockTicket.latitude,
   mockTicket.longitude
 );
-assert(distNear <= 50, `Expected in-range (<=50m), got ${distNear}m`);
+assert(distNear <= 5, `Expected in-range (<=5m), got ${distNear}m`);
 console.log(`✅ Test 1: In-range auditor verified at ${distNear}m -> Audit button enabled`);
 
 // 2. Verify distance calculation from 120m away
@@ -41,7 +41,7 @@ const distFar = calculateHaversineDistance(
   mockTicket.latitude,
   mockTicket.longitude
 );
-assert(distFar > 50, `Expected out-of-range (>50m), got ${distFar}m`);
+assert(distFar > 5, `Expected out-of-range (>5m), got ${distFar}m`);
 console.log(`✅ Test 2: Out-of-range auditor verified at ${distFar}m -> Audit button safely locked`);
 
 // 3. Verify Before & After presence
@@ -50,8 +50,8 @@ assert(mockTicket.status === 'PROVISIONAL_FIX', 'Status must be PROVISIONAL_FIX'
 console.log('✅ Test 3: Dual before/after photos present for provisional verification');
 
 // 4. Verify geofence gating for the audit button
-assert(distNear <= 50, 'Audit button must enable in range');
-assert(distFar > 50, 'Audit button must lock out of range');
+assert(distNear <= 5, 'Audit button must enable in range');
+assert(distFar > 5, 'Audit button must lock out of range');
 console.log('✅ Test 4: Audit-button geofence gating verified (in-range enabled, out-of-range locked)');
 
 console.log('🎉 ALL CIVIC POST CARD TESTS PASSED SUCCESSFULLY!');

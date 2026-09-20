@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import {
   Camera,
-  Image as ImageIcon,
   MapPin,
   Sparkles,
   CheckCircle2,
@@ -173,26 +172,6 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
     }
   };
 
-  const handleLaunchGallery = async () => {
-    setErrorMessage(null);
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.8,
-        aspect: [4, 3],
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
-        setPhotoUri(uri);
-        setPhotoKind('local');
-        await analyzePhoto(uri);
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Unable to select from library');
-    }
-  };
-
   const handleSelectSample = async (sampleUrl: string) => {
     setErrorMessage(null);
     setPhotoUri(sampleUrl);
@@ -325,16 +304,6 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
               <Camera size={26} color="#FFFFFF" />
               <Text style={styles.primaryBtnText}>Take Live Photo</Text>
               <Text style={styles.primaryBtnSub}>Live Device Viewfinder</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.secondaryCaptureBtn}
-              onPress={handleLaunchGallery}
-              activeOpacity={0.8}
-            >
-              <ImageIcon size={26} color="#0F172A" />
-              <Text style={styles.secondaryBtnText}>Choose from Gallery</Text>
-              <Text style={styles.secondaryBtnSub}>Photo Library</Text>
             </TouchableOpacity>
           </View>
 

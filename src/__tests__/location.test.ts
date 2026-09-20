@@ -13,15 +13,15 @@ const d0 = calculateHaversineDistance(30.8785, 75.8462, 30.8785, 75.8462);
 assert(d0 === 0, `Expected 0m, got ${d0}m`);
 console.log('✅ Test 1: Zero distance for identical points passed');
 
-// Test 2: Geofence within 50m (approx 30m offset)
-// 0.00027 degrees latitude is approx 30 meters
-const nearCheck = checkGeofence(30.8785, 75.8462, 30.87877, 75.8462, 50);
+// Test 2: Geofence within 5m (approx 2m offset)
+// 0.00002 degrees latitude is approx 2 meters
+const nearCheck = checkGeofence(30.8785, 75.8462, 30.87852, 75.8462, 5);
 assert(nearCheck.isWithinRange === true, `Expected within range, got ${nearCheck.distanceMeters}m`);
-assert(nearCheck.distanceMeters >= 25 && nearCheck.distanceMeters <= 35, `Expected ~30m, got ${nearCheck.distanceMeters}m`);
-console.log(`✅ Test 2: 30m offset correctly classified as in-range (${nearCheck.distanceMeters}m)`);
+assert(nearCheck.distanceMeters >= 1 && nearCheck.distanceMeters <= 5, `Expected ~2m, got ${nearCheck.distanceMeters}m`);
+console.log(`✅ Test 2: 2m offset correctly classified as in-range (${nearCheck.distanceMeters}m)`);
 
-// Test 3: Geofence out of 50m range (approx 120m offset)
-const farCheck = checkGeofence(30.8785, 75.8462, 30.8796, 75.8462, 50);
+// Test 3: Geofence out of 5m range (approx 120m offset)
+const farCheck = checkGeofence(30.8785, 75.8462, 30.8796, 75.8462, 5);
 assert(farCheck.isWithinRange === false, `Expected out of range, got ${farCheck.distanceMeters}m`);
 assert(farCheck.distanceMeters > 100, `Expected >100m, got ${farCheck.distanceMeters}m`);
 console.log(`✅ Test 3: Out-of-range point correctly rejected (${farCheck.distanceMeters}m)`);

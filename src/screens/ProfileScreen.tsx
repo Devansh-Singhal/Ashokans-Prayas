@@ -100,15 +100,10 @@ export const ProfileScreen: React.FC = () => {
         </View>
         <Text style={styles.handle}>{currentUser.public_handle}</Text>
         <Text style={styles.role}>{currentPersona.role} • {currentPersona.name}</Text>
-        <View
-          style={[
-            styles.verifiedTag,
-            currentUser.consent_status !== 'ACTIVE' && styles.verifiedTagPending,
-          ]}
-        >
+        <View style={styles.verifiedRow}>
           <ShieldCheck
             size={14}
-            color={currentUser.consent_status === 'ACTIVE' ? COLORS.verified : '#D97706'}
+            color={currentUser.consent_status === 'ACTIVE' ? COLORS.verified : '#92400E'}
           />
           <Text
             style={[
@@ -156,7 +151,7 @@ export const ProfileScreen: React.FC = () => {
           {/* Points Card */}
           <View style={styles.statCard}>
             <View style={styles.statRow}>
-              <View>
+              <View style={styles.statInfo}>
                 <Text style={styles.statLabel}>Total Points Balance</Text>
                 <Text style={styles.statValue}>{currentUser.points_balance} pts</Text>
               </View>
@@ -167,7 +162,7 @@ export const ProfileScreen: React.FC = () => {
           {/* Academic Credential Note */}
           <View style={styles.certCard}>
             <FileText size={20} color={COLORS.amber} />
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, flexShrink: 1 }}>
               <Text style={styles.certTitle}>Open-Data Infrastructure Credential</Text>
               <Text style={styles.certText}>
                 Points are verified civic contributions synced from the server ward ledger. Exportable service summary coming soon.
@@ -220,14 +215,14 @@ export const ProfileScreen: React.FC = () => {
               ) : (
                 serverTasks!.grouped_domains.map((d) => (
                   <View key={d.domain_id} style={styles.groupRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.groupName}>{d.title}</Text>
-                      <Text style={styles.groupJurisdiction}>{d.jurisdiction}</Text>
+                    <View style={styles.groupInfo}>
+                      <Text style={styles.groupName} numberOfLines={2}>{d.title}</Text>
+                      <Text style={styles.groupJurisdiction} numberOfLines={1}>{d.jurisdiction}</Text>
                       {d.tasks.some((t) => t.is_simulated) && (
-                        <Text style={styles.demoBadge}>Demo data</Text>
+                        <Text style={styles.demoNote}>Demo data</Text>
                       )}
                     </View>
-                    <View style={styles.groupCountPill}>
+                    <View style={styles.groupCountWrap}>
                       <Text style={styles.groupCountText}>{d.task_count}</Text>
                     </View>
                   </View>
@@ -244,8 +239,10 @@ export const ProfileScreen: React.FC = () => {
             ) : (
               groups.map((g) => (
                 <View key={g.group} style={styles.groupRow}>
-                  <Text style={styles.groupName}>{g.group}</Text>
-                  <View style={styles.groupCountPill}>
+                  <View style={styles.groupInfo}>
+                    <Text style={styles.groupName} numberOfLines={2}>{g.group}</Text>
+                  </View>
+                  <View style={styles.groupCountWrap}>
                     <Text style={styles.groupCountText}>{g.count}</Text>
                   </View>
                 </View>
@@ -254,13 +251,8 @@ export const ProfileScreen: React.FC = () => {
           </View>
           )}
 
-          {/* Eligibility banner */}
-          <View
-            style={[
-              styles.eligibilityBanner,
-              eligibility.eligible ? styles.eligibilityBannerActive : styles.eligibilityBannerPending,
-            ]}
-          >
+          {/* Eligibility status — plain text row, semantic color */}
+          <View style={styles.eligibilityRow}>
             <CheckCircle2 size={18} color={eligibility.eligible ? COLORS.verified : '#92400E'} />
             <Text
               style={[
@@ -322,17 +314,22 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   content: {
-    padding: 20,
+    padding: 16,
     paddingBottom: 130,
   },
   profileHero: {
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    padding: 24,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: 14,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.mist,
+    shadowColor: '#0B1B2F',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   avatarBig: {
     width: 64,
@@ -340,7 +337,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   avatarBigLetter: {
     ...TYPOGRAPHY.h3,
@@ -356,23 +353,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  verifiedTag: {
+  verifiedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    gap: 6,
     marginTop: 8,
-  },
-  verifiedTagPending: {
-    backgroundColor: '#FEF3C7',
   },
   verifiedText: {
     ...TYPOGRAPHY.micro,
     ...CAPS_LABEL,
-    color: '#15803D',
+    color: COLORS.verified,
   },
   verifiedTextPending: {
     color: '#92400E',
@@ -404,16 +394,26 @@ const styles = StyleSheet.create({
   },
   statCard: {
     backgroundColor: COLORS.surface,
-    padding: 20,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.mist,
     marginBottom: 16,
+    shadowColor: '#0B1B2F',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
+  },
+  statInfo: {
+    flex: 1,
+    flexShrink: 1,
   },
   statLabel: {
     ...TYPOGRAPHY.bodySm,
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   progressDivider: {
     height: 1,
     backgroundColor: COLORS.mist,
-    marginVertical: 14,
+    marginVertical: 12,
   },
   certCard: {
     flexDirection: 'row',
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.navyDeep,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 14,
   },
   certTitle: {
     ...TYPOGRAPHY.bodyStrong,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   },
   certificateHolderName: {
     ...TYPOGRAPHY.h2,
-    ...NUMERIC,
+    fontWeight: '600',
     color: COLORS.text,
     marginTop: 4,
   },
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   groupsTitle: {
     ...TYPOGRAPHY.bodyStrong,
     color: COLORS.text,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   emptyGroupsText: {
     ...TYPOGRAPHY.bodySm,
@@ -484,10 +484,16 @@ const styles = StyleSheet.create({
   groupRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.mist,
+  },
+  groupInfo: {
+    flex: 1,
+    flexShrink: 1,
+    paddingRight: 8,
   },
   groupName: {
     ...TYPOGRAPHY.bodyStrong,
@@ -496,13 +502,13 @@ const styles = StyleSheet.create({
   groupJurisdiction: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    marginTop: 1,
+    marginTop: 2,
   },
-  demoBadge: {
+  demoNote: {
     ...TYPOGRAPHY.micro,
     ...CAPS_LABEL,
-    color: '#92400E',
-    marginTop: 2,
+    color: COLORS.muted,
+    marginTop: 4,
   },
   offlineNote: {
     ...TYPOGRAPHY.caption,
@@ -510,40 +516,41 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  groupCountPill: {
-    backgroundColor: COLORS.orange,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+  groupCountWrap: {
+    width: 64,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    paddingTop: 2,
   },
   groupCountText: {
-    ...TYPOGRAPHY.bodySmStrong,
+    ...TYPOGRAPHY.bodyStrong,
     ...NUMERIC,
-    color: COLORS.onOrange,
+    color: COLORS.text,
+    textAlign: 'right',
   },
-  eligibilityBanner: {
+  eligibilityRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    borderRadius: 14,
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
+    borderColor: COLORS.mist,
     marginBottom: 12,
-  },
-  eligibilityBannerActive: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#BBF7D0',
-  },
-  eligibilityBannerPending: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#FDE68A',
+    shadowColor: '#0B1B2F',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   eligibilityText: {
     ...TYPOGRAPHY.bodySmStrong,
     flex: 1,
+    flexShrink: 1,
   },
   eligibilityTextActive: {
-    color: '#15803D',
+    color: COLORS.verified,
   },
   eligibilityTextPending: {
     color: '#92400E',
@@ -553,7 +560,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: COLORS.mist,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.mist,
     paddingVertical: 14,

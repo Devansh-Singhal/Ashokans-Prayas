@@ -268,8 +268,8 @@ async def verify_ticket(
         )
     if auditor_id == ticket.reporter_id:
         raise HTTPException(status_code=403, detail="Cannot verify your own report")
-    if haversine_m(latitude, longitude, ticket.latitude, ticket.longitude) > 50:
-        raise HTTPException(status_code=403, detail="Auditor must be within 50m of the issue")
+    if haversine_m(latitude, longitude, ticket.latitude, ticket.longitude) > 5:
+        raise HTTPException(status_code=403, detail="Auditor must be within 5m of the issue")
     auditor = await db.get(User, auditor_id)
     if not auditor:
         raise HTTPException(status_code=404, detail="Auditor not found")

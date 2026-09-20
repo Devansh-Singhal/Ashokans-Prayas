@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { X, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react-native';
 import { StepSpotIcon, StepEscalateIcon, StepAuditIcon } from './CivicIcons';
+import { COLORS } from '../constants/colors';
 import { CAPS_LABEL, TYPOGRAPHY } from '../constants/typography';
 
 export const CivicOnboardingCard: React.FC = () => {
@@ -16,9 +17,9 @@ export const CivicOnboardingCard: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.titleGroup}>
           <View style={styles.shieldIconBox}>
-            <ShieldCheck size={18} color="#38BDF8" />
+            <ShieldCheck size={18} color={COLORS.navy} />
           </View>
-          <View>
+          <View style={styles.titleTextGroup}>
             <Text style={styles.title}>How CivicFeed Works</Text>
             <Text style={styles.subtitle}>Ward 14 Citizen Verification Network • Ludhiana, Punjab</Text>
           </View>
@@ -33,9 +34,9 @@ export const CivicOnboardingCard: React.FC = () => {
             accessibilityLabel={isCollapsed ? 'Expand how CivicFeed works' : 'Collapse how CivicFeed works'}
           >
             {isCollapsed ? (
-              <ChevronDown size={18} color="#94A3B8" />
+              <ChevronDown size={18} color={COLORS.inkSoft} />
             ) : (
-              <ChevronUp size={18} color="#94A3B8" />
+              <ChevronUp size={18} color={COLORS.inkSoft} />
             )}
           </TouchableOpacity>
 
@@ -46,7 +47,7 @@ export const CivicOnboardingCard: React.FC = () => {
             accessibilityRole="button"
             accessibilityLabel="Dismiss how CivicFeed works"
           >
-            <X size={18} color="#94A3B8" />
+            <X size={18} color={COLORS.inkSoft} />
           </TouchableOpacity>
         </View>
       </View>
@@ -55,16 +56,18 @@ export const CivicOnboardingCard: React.FC = () => {
         <View style={styles.stepsContainer}>
           {/* Step 1 */}
           <View style={styles.stepRow}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}>
-              <StepSpotIcon size={20} color="#0284C7" />
+            <View style={styles.iconWrapper}>
+              <StepSpotIcon size={20} color={COLORS.navy} />
             </View>
             <View style={styles.stepContent}>
-              <View style={styles.stepHeadingRow}>
-                <Text style={styles.stepNumber}>1. SPOT</Text>
-                <View style={styles.pointsPill} accessible={true} accessibilityLabel="Earns 50 escrow points">
-                  <Text style={styles.pointsPillText}>+50 pts</Text>
-                </View>
-              </View>
+              <Text style={styles.stepNumber}>1. Spot</Text>
+              <Text
+                style={styles.pointsText}
+                accessible={true}
+                accessibilityLabel="Earns 50 escrow points"
+              >
+                Spot — earns 50 pts
+              </Text>
               <Text style={styles.stepDesc}>
                 Photograph road hazards with GPS to notify the Ludhiana Municipal Corporation.
               </Text>
@@ -73,16 +76,18 @@ export const CivicOnboardingCard: React.FC = () => {
 
           {/* Step 2 */}
           <View style={styles.stepRow}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-              <StepEscalateIcon size={20} color="#D97706" />
+            <View style={styles.iconWrapper}>
+              <StepEscalateIcon size={20} color={COLORS.orange} />
             </View>
             <View style={styles.stepContent}>
-              <View style={styles.stepHeadingRow}>
-                <Text style={styles.stepNumber}>2. FIX</Text>
-                <View style={styles.pointsPill} accessible={true} accessibilityLabel="Repair photo uploaded by municipal crew">
-                  <Text style={styles.pointsPillText}>crew upload</Text>
-                </View>
-              </View>
+              <Text style={styles.stepNumber}>2. Fix</Text>
+              <Text
+                style={styles.pointsText}
+                accessible={true}
+                accessibilityLabel="Repair photo uploaded by municipal crew"
+              >
+                Fix — crew upload
+              </Text>
               <Text style={styles.stepDesc}>
                 Municipal crews upload a repair photo, marking the defect ready for audit.
               </Text>
@@ -91,18 +96,20 @@ export const CivicOnboardingCard: React.FC = () => {
 
           {/* Step 3 */}
           <View style={styles.stepRow}>
-            <View style={[styles.iconWrapper, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-              <StepAuditIcon size={20} color="#16A34A" />
+            <View style={styles.iconWrapper}>
+              <StepAuditIcon size={20} color={COLORS.navy} />
             </View>
             <View style={styles.stepContent}>
-              <View style={styles.stepHeadingRow}>
-                <Text style={styles.stepNumber}>3. AUDIT</Text>
-                <View style={[styles.pointsPill, { backgroundColor: '#DCFCE7' }]} accessible={true} accessibilityLabel="Earns 150 audit points">
-                  <Text style={[styles.pointsPillText, { color: '#15803D' }]}>+150 pts</Text>
-                </View>
-              </View>
+              <Text style={styles.stepNumber}>3. Audit</Text>
+              <Text
+                style={styles.pointsText}
+                accessible={true}
+                accessibilityLabel="Earns 150 audit points"
+              >
+                Audit — earns 150 pts
+              </Text>
               <Text style={styles.stepDesc}>
-                When contractors upload a fix, walk within 50m to inspect and close the ticket.
+                When contractors upload a fix, walk within 5m to inspect and close the ticket.
               </Text>
             </View>
           </View>
@@ -114,19 +121,19 @@ export const CivicOnboardingCard: React.FC = () => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
     padding: 16,
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    borderColor: COLORS.mist,
+    shadowColor: COLORS.navy,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
@@ -136,45 +143,55 @@ const styles = StyleSheet.create({
   titleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     flex: 1,
   },
   shieldIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: '#0F172A',
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.mist,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  titleTextGroup: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
   title: {
     ...TYPOGRAPHY.subtitle,
-    color: '#0F172A',
+    color: COLORS.ink,
+    textAlign: 'left',
   },
   subtitle: {
     ...TYPOGRAPHY.caption,
-    color: '#64748B',
+    color: COLORS.inkSoft,
+    textAlign: 'left',
     marginTop: 1,
   },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   iconButton: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.mist,
     minWidth: 44,
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepsContainer: {
-    marginTop: 14,
-    paddingTop: 14,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: COLORS.mist,
     gap: 12,
   },
   stepRow: {
@@ -187,35 +204,31 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     borderWidth: 1,
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.mist,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepContent: {
     flex: 1,
-  },
-  stepHeadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 2,
+    alignItems: 'flex-start',
   },
   stepNumber: {
     ...TYPOGRAPHY.bodySmStrong,
     ...CAPS_LABEL,
-    color: '#0F172A',
+    color: COLORS.ink,
+    textAlign: 'left',
+    marginBottom: 8,
   },
-  pointsPill: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  pointsPillText: {
-    ...TYPOGRAPHY.micro,
-    color: '#B45309',
+  pointsText: {
+    ...TYPOGRAPHY.bodySm,
+    color: COLORS.inkSoft,
+    textAlign: 'left',
+    marginBottom: 8,
   },
   stepDesc: {
     ...TYPOGRAPHY.caption,
-    color: '#475569',
+    color: COLORS.inkSoft,
+    textAlign: 'left',
   },
 });

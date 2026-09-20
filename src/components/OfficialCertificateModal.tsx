@@ -11,13 +11,11 @@ import {
 } from 'react-native';
 import {
   Award,
-  Download,
   Share2,
   ShieldCheck,
   X,
   QrCode,
   Building2,
-  ExternalLink,
 } from 'lucide-react-native';
 import { CertificateData } from '../types';
 import { COLORS } from '../constants/colors';
@@ -65,37 +63,43 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
           {/* Top Bar */}
           <View style={styles.topBar}>
             <View style={styles.badgeRow}>
-              <Award size={18} color="#D97706" />
-              <Text style={styles.topBadgeText}>OFFICIAL CIVIC CREDENTIAL</Text>
+              <Award size={18} color={COLORS.navy} />
+              <Text style={styles.topBadgeText}>Official Civic Credential</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-              <X size={20} color="#64748B" />
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeBtn}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Close certificate"
+            >
+              <X size={20} color={COLORS.navy} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.scrollArea} contentContainerStyle={styles.certFrame}>
-            {/* Inner Certificate Parchment */}
-            <View style={styles.parchment}>
-              {/* Gold Top Crest */}
+            {/* Certificate sheet — light minimalist surface */}
+            <View style={styles.sheet}>
+              {/* Authority header */}
               <View style={styles.crestHeader}>
-                <Building2 size={28} color="#92400E" />
-                <Text style={styles.govTitle}>GOVERNMENT OF PUNJAB</Text>
+                <Building2 size={28} color={COLORS.navy} />
+                <Text style={styles.govTitle}>Government of Punjab</Text>
                 <Text style={styles.deptSubtitle}>
-                  MUNICIPAL CORPORATION LUDHIANA (MCL) • PUNJAB CIVIC AUDIT AUTHORITY
+                  Municipal Corporation Ludhiana (MCL) • Punjab Civic Audit Authority
                 </Text>
-                <View style={styles.goldDivider} />
+                <View style={styles.mistDivider} />
               </View>
 
-              {/* Certificate Main Title */}
-              <Text style={styles.certHeading}>CERTIFICATE OF CIVIC CONTRIBUTION</Text>
+              {/* Certificate title */}
+              <Text style={styles.certHeading}>Certificate of Civic Contribution</Text>
               <Text style={styles.certSubheading}>
-                AND SOCIAL IMPACT VERIFICATION
+                And Social Impact Verification
               </Text>
 
               <Text style={styles.presentationText}>This is to officially certify that</Text>
 
-              {/* Recipient Name */}
-              <View style={styles.recipientBox}>
+              {/* Recipient — largest, semibold */}
+              <View style={styles.recipientBlock}>
                 <Text style={styles.recipientName}>{certificate.recipient.name}</Text>
                 <Text style={styles.recipientHandle}>@{certificate.recipient.public_handle}</Text>
                 <Text style={styles.institutionName}>{certificate.recipient.institution}</Text>
@@ -108,54 +112,59 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
                 <Text style={styles.highlightText}>{citizensCount.toLocaleString()} citizens</Text> across Municipal Corporation Ludhiana.
               </Text>
 
-              {/* Key Impact Stats Metric */}
-              <View style={styles.metricsGrid}>
-                <View style={styles.metricCard}>
+              {/* Key impact stats — plain columns with dividers */}
+              <View style={styles.metricsRow}>
+                <View style={styles.metricCol}>
                   <Text style={styles.metricVal}>{verifiedTasksCount}</Text>
                   <Text style={styles.metricLbl}>Verified Tasks</Text>
                 </View>
-                <View style={styles.metricCard}>
+                <View style={[styles.metricCol, styles.metricColDivided]}>
                   <Text style={styles.metricVal}>{citizensCount.toLocaleString()}+</Text>
                   <Text style={styles.metricLbl}>Citizens Safeguarded</Text>
                 </View>
-                <View style={styles.metricCard}>
-                  <Text style={styles.metricVal}>{certificate.summary.points_earned ? `${certificate.summary.points_earned} pts` : 'Grade A'}</Text>
-                  <Text style={styles.metricLbl}>Impact Score</Text>
+                <View style={[styles.metricCol, styles.metricColDivided]}>
+                  <Text style={styles.metricVal} numberOfLines={1}>
+                    {certificate.summary.points_earned ? `${certificate.summary.points_earned}` : 'A'}
+                  </Text>
+                  <Text style={styles.metricLbl}>
+                    {certificate.summary.points_earned ? 'Impact Points' : 'Impact Grade'}
+                  </Text>
                 </View>
               </View>
 
-              {/* AI Grouped Domain Task Table */}
-              <View style={styles.tableContainer}>
-                <Text style={styles.tableTitle}>AI-ACCUMULATED TASK DOMAINS</Text>
+              {/* Domain task rows — thin dividers, fixed-width counts */}
+              <View style={styles.tableSection}>
+                <Text style={styles.tableTitle}>Accumulated Task Domains</Text>
                 {certificate.domains.map((dom, i) => (
                   <View key={i} style={styles.tableRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.domTitle}>{dom.title}</Text>
-                      <Text style={styles.domJurisdiction}>{dom.jurisdiction}</Text>
-                      <Text style={styles.domMetric}>• {dom.impact_metric}</Text>
+                    <View style={styles.domInfo}>
+                      <Text style={styles.domTitle} numberOfLines={2}>{dom.title}</Text>
+                      <Text style={styles.domJurisdiction} numberOfLines={1}>{dom.jurisdiction}</Text>
+                      <Text style={styles.domMetric} numberOfLines={2}>{dom.impact_metric}</Text>
+                      <Text style={styles.statusText}>Verified</Text>
                     </View>
-                    <View style={styles.taskCountPill}>
-                      <Text style={styles.taskCountText}>{dom.task_count} tasks</Text>
-                      <Text style={styles.statusPillText}>Verified</Text>
+                    <View style={styles.countCol}>
+                      <Text style={styles.countText}>{dom.task_count}</Text>
+                      <Text style={styles.countUnit}>tasks</Text>
                     </View>
                   </View>
                 ))}
               </View>
 
-              {/* Verification & Signatories */}
+              {/* Verification & signatories */}
               <View style={styles.verificationSection}>
                 <View style={styles.qrSide}>
-                  <View style={styles.qrPlaceholder}>
-                    <QrCode size={48} color="#0F172A" />
+                  <View style={styles.qrBox}>
+                    <QrCode size={48} color={COLORS.navy} />
                   </View>
-                  <Text style={styles.certIdText}>{serialId}</Text>
-                  <Text style={styles.hashText}>Hash: {certificate.verification_hash}</Text>
+                  <Text style={styles.certIdText} numberOfLines={1}>{serialId}</Text>
+                  <Text style={styles.hashText} numberOfLines={2}>Hash: {certificate.verification_hash}</Text>
                 </View>
 
                 <View style={styles.signSide}>
-                  <View style={styles.sealBadge}>
-                    <ShieldCheck size={20} color="#15803D" />
-                    <Text style={styles.sealText}>MCL PUNJAB SEAL</Text>
+                  <View style={styles.sealRow}>
+                    <ShieldCheck size={16} color={COLORS.verified} />
+                    <Text style={styles.sealText}>MCL Punjab Seal</Text>
                   </View>
                   <Text style={styles.signTitle}>Digitally Endorsed by</Text>
                   <Text style={styles.signPerson}>Commissioner, MCL</Text>
@@ -163,7 +172,7 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
                 </View>
               </View>
 
-              {/* Date & Tamper-proof Note */}
+              {/* Date note */}
               <Text style={styles.footerNote}>
                 Issued on {new Date(certificate.issued_at).toLocaleDateString('en-IN', {
                   day: 'numeric',
@@ -174,12 +183,14 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
             </View>
           </ScrollView>
 
-          {/* Bottom Actions Bar */}
+          {/* Bottom actions — single orange primary */}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={styles.shareBtn}
               onPress={handleShare}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Share Credential"
             >
               <Share2 size={18} color={COLORS.onOrange} />
               <Text style={styles.shareBtnText}>Share Credential</Text>
@@ -189,6 +200,8 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
               style={styles.copyBtn}
               onPress={handleShareLink}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Share Verify Link"
             >
               <Share2 size={18} color={COLORS.navy} />
               <Text style={styles.copyBtnText}>Share Verify Link</Text>
@@ -203,308 +216,333 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    backgroundColor: 'rgba(11, 27, 47, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
   modalCard: {
-    backgroundColor: COLORS.navy,
-    borderRadius: 24,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
     width: '100%',
     maxHeight: '92%',
     borderWidth: 1,
-    borderColor: COLORS.navyDeep,
+    borderColor: COLORS.mist,
     overflow: 'hidden',
+    shadowColor: '#0B1B2F',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: COLORS.navyDeep,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.contentDark,
+    borderBottomColor: COLORS.mist,
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    flexShrink: 1,
   },
   topBadgeText: {
     ...TYPOGRAPHY.micro,
     ...CAPS_LABEL,
-    color: COLORS.amber,
+    color: COLORS.text,
+    flexShrink: 1,
   },
   closeBtn: {
-    padding: 6,
-    borderRadius: 16,
-    backgroundColor: COLORS.contentDark,
+    padding: 10,
+    minWidth: 44,
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.mist,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollArea: {
     maxHeight: 560,
   },
   certFrame: {
     padding: 16,
+    backgroundColor: COLORS.background,
   },
-  parchment: {
-    backgroundColor: '#FFFDF7',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#D97706',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+  sheet: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.mist,
+    shadowColor: '#0B1B2F',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   crestHeader: {
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   govTitle: {
-    color: '#78350F',
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 1,
-    marginTop: 6,
+    ...TYPOGRAPHY.subtitle,
+    ...CAPS_LABEL,
+    color: COLORS.text,
+    marginTop: 8,
+    textAlign: 'center',
   },
   deptSubtitle: {
-    color: '#92400E',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginTop: 2,
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: 4,
     textAlign: 'center',
   },
-  goldDivider: {
-    width: 140,
-    height: 2,
-    backgroundColor: '#D97706',
-    marginTop: 10,
-    borderRadius: 2,
+  mistDivider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: COLORS.mist,
+    marginTop: 12,
   },
   certHeading: {
-    ...TYPOGRAPHY.h2,
-    color: '#1E293B',
+    ...TYPOGRAPHY.title,
+    color: COLORS.text,
     textAlign: 'center',
     marginTop: 8,
-    letterSpacing: 0.5,
   },
   certSubheading: {
     ...TYPOGRAPHY.micro,
     ...CAPS_LABEL,
-    color: '#64748B',
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginTop: 2,
-    marginBottom: 14,
+    marginTop: 4,
+    marginBottom: 12,
   },
   presentationText: {
-    fontSize: 12,
-    color: '#64748B',
+    ...TYPOGRAPHY.bodySm,
     fontStyle: 'italic',
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  recipientBox: {
+  recipientBlock: {
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    marginBottom: 14,
+    marginBottom: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: COLORS.mist,
   },
   recipientName: {
-    ...TYPOGRAPHY.h1,
-    color: '#78350F',
+    ...TYPOGRAPHY.h2,
+    fontWeight: '600',
+    color: COLORS.text,
     textAlign: 'center',
   },
   recipientHandle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#B45309',
-    marginTop: 2,
+    ...TYPOGRAPHY.bodySm,
+    ...NUMERIC,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   institutionName: {
-    fontSize: 11,
-    color: '#92400E',
-    fontWeight: '600',
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
   certBody: {
-    fontSize: 12,
-    color: '#334155',
-    lineHeight: 18,
+    ...TYPOGRAPHY.bodySm,
+    color: COLORS.text,
+    lineHeight: 20,
     textAlign: 'center',
-    marginBottom: 14,
-  },
-  highlightText: {
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    gap: 8,
     marginBottom: 16,
   },
-  metricCard: {
+  highlightText: {
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: COLORS.mist,
+  },
+  metricCol: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    padding: 10,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  metricColDivided: {
+    borderLeftWidth: 1,
+    borderLeftColor: COLORS.mist,
   },
   metricVal: {
-    ...TYPOGRAPHY.stat,
+    ...TYPOGRAPHY.h2,
     ...NUMERIC,
-    color: '#0F172A',
+    fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'center',
   },
   metricLbl: {
     ...TYPOGRAPHY.micro,
-    color: '#64748B',
+    ...CAPS_LABEL,
+    color: COLORS.muted,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 4,
   },
-  tableContainer: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  tableSection: {
     marginBottom: 16,
   },
   tableTitle: {
     ...TYPOGRAPHY.micro,
     ...CAPS_LABEL,
-    color: '#64748B',
+    color: COLORS.muted,
     marginBottom: 8,
   },
   tableRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    gap: 12,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.mist,
+  },
+  domInfo: {
+    flex: 1,
+    flexShrink: 1,
+    paddingRight: 8,
   },
   domTitle: {
     ...TYPOGRAPHY.bodyStrong,
-    color: '#0F172A',
+    color: COLORS.text,
   },
   domJurisdiction: {
-    fontSize: 10,
-    color: '#2563EB',
-    fontWeight: '600',
-  },
-  domMetric: {
-    fontSize: 10,
-    color: '#64748B',
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
-  taskCountPill: {
+  domMetric: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  statusText: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
+    color: COLORS.verified,
+    marginTop: 4,
+  },
+  countCol: {
+    width: 64,
     alignItems: 'flex-end',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    paddingTop: 2,
   },
-  taskCountText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#0F172A',
+  countText: {
+    ...TYPOGRAPHY.bodyStrong,
+    ...NUMERIC,
+    color: COLORS.text,
+    textAlign: 'right',
   },
-  statusPillText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#16A34A',
+  countUnit: {
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
+    color: COLORS.muted,
+    textAlign: 'right',
+    marginTop: 2,
   },
   verificationSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: COLORS.mist,
   },
   qrSide: {
     alignItems: 'flex-start',
+    flexShrink: 1,
+    maxWidth: 160,
   },
-  qrPlaceholder: {
-    backgroundColor: '#FFFFFF',
-    padding: 6,
-    borderRadius: 8,
+  qrBox: {
+    backgroundColor: COLORS.surface,
+    padding: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 4,
+    borderColor: COLORS.mist,
+    marginBottom: 8,
   },
   certIdText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...TYPOGRAPHY.captionStrong,
+    ...NUMERIC,
+    color: COLORS.text,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   hashText: {
-    fontSize: 8,
-    color: '#64748B',
+    ...TYPOGRAPHY.caption,
+    ...NUMERIC,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   signSide: {
     alignItems: 'flex-end',
     flex: 1,
-    marginLeft: 12,
+    flexShrink: 1,
   },
-  sealBadge: {
+  sealRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 8,
   },
   sealText: {
-    color: '#15803D',
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    ...TYPOGRAPHY.micro,
+    ...CAPS_LABEL,
+    color: COLORS.verified,
   },
   signTitle: {
-    fontSize: 9,
-    color: '#64748B',
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'right',
   },
   signPerson: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...TYPOGRAPHY.bodySmStrong,
+    color: COLORS.text,
     textAlign: 'right',
+    marginTop: 2,
   },
   signRole: {
-    fontSize: 8,
-    color: '#64748B',
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
     textAlign: 'right',
+    marginTop: 2,
   },
   footerNote: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    fontSize: 9,
-    color: '#94A3B8',
-    marginTop: 14,
+    marginTop: 16,
   },
   actionRow: {
     flexDirection: 'row',
     padding: 16,
     gap: 12,
-    backgroundColor: COLORS.navyDeep,
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.contentDark,
+    borderTopColor: COLORS.mist,
   },
   shareBtn: {
     flex: 1,
@@ -514,6 +552,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: COLORS.orange,
     paddingVertical: 14,
+    minHeight: 44,
     borderRadius: 14,
   },
   shareBtnText: {
@@ -526,8 +565,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.mist,
     paddingVertical: 14,
+    minHeight: 44,
     borderRadius: 14,
   },
   copyBtnText: {

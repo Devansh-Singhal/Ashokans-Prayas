@@ -85,15 +85,15 @@ async function runApiTests() {
   assert(fixResult.status === 'PROVISIONAL_FIX', `Expected PROVISIONAL_FIX, got ${fixResult.status}`);
   console.log(`✅ Test 8: uploadProvisionalFix uploaded fix photo successfully: ${fixResult.status}`);
 
-  // Test 9: Verify ticket via verifyTicket endpoint (within 50m geofence)
+  // Test 9: Verify ticket via verifyTicket endpoint (within 5m geofence)
   const strangerPhone = `+9195${Math.floor(10000000 + Math.random() * 90000000)}`;
   const stranger = await api.register(strangerPhone, false);
   const verifyResult = await api.verifyTicket(
     ticketId,
     samplePhoto,
     stranger.id,
-    testLat + 0.0001,
-    testLon + 0.0001
+    testLat + 0.00002,
+    testLon + 0.00002
   );
   assert(verifyResult.ticket_status === 'RESOLVED', `Expected RESOLVED status, got ${verifyResult.ticket_status}`);
   assert(verifyResult.credited_points > 0, 'Expected positive credited points');
