@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
-import { Activity, Award, CheckCircle2, Download, Eye, FileText, ShieldCheck } from 'lucide-react-native';
+import { Activity, Award, CheckCircle2, Download, Eye, FileText, Globe, ShieldCheck } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { OfficialCertificateModal } from '../components/OfficialCertificateModal';
 import { COLORS } from '../constants/colors';
 import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
@@ -11,6 +11,8 @@ import { CertificateData, Contribution, UserTasksResponse } from '../types';
 import { certificateEligibility, groupContributions } from '../utils/contributions';
 
 type ProfileTab = 'overview' | 'certificate';
+
+const CITY_WEBSITE_URL = 'https://jawabdari-website-virid.vercel.app/';
 
 export const ProfileScreen: React.FC = () => {
   const router = useRouter();
@@ -119,6 +121,18 @@ export const ProfileScreen: React.FC = () => {
           </Text>
         </View>
       </View>
+
+      {/* City website link */}
+      <TouchableOpacity
+        style={styles.cityWebsiteButton}
+        onPress={() => Linking.openURL(CITY_WEBSITE_URL)}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Know your City"
+      >
+        <Globe size={18} color={COLORS.onOrange} />
+        <Text style={styles.cityWebsiteButtonText}>Know your City</Text>
+      </TouchableOpacity>
 
       {/* Overview / Certificate segmented control */}
       <View style={styles.segmentedControl}>
@@ -380,6 +394,21 @@ const styles = StyleSheet.create({
   },
   verifiedTextPending: {
     color: '#92400E',
+  },
+  cityWebsiteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.orange,
+    paddingVertical: 14,
+    minHeight: 44,
+    borderRadius: 14,
+    marginBottom: 16,
+  },
+  cityWebsiteButtonText: {
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.onOrange,
   },
   segmentedControl: {
     flexDirection: 'row',

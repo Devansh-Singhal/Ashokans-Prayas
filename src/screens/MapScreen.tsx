@@ -2,7 +2,6 @@ import { MapPin, Navigation, ShieldCheck } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -388,7 +387,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#334155',
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 28,
+    paddingBottom: 130, // Safe mobile inset to prevent content clipping behind the floating tab bar
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
