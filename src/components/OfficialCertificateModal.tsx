@@ -1,25 +1,25 @@
-import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Share,
-  Platform,
-} from 'react-native';
 import {
   Award,
+  Building2,
+  QrCode,
   Share2,
   ShieldCheck,
   X,
-  QrCode,
-  Building2,
 } from 'lucide-react-native';
-import { CertificateData } from '../types';
+import React from 'react';
+import {
+  Modal,
+  Platform,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { COLORS } from '../constants/colors';
 import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
+import { CertificateData } from '../types';
 
 interface Props {
   visible: boolean;
@@ -78,7 +78,7 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
           </View>
 
           <ScrollView style={styles.scrollArea} contentContainerStyle={styles.certFrame}>
-            {/* Certificate sheet — light minimalist surface */}
+            {/* Certificate sheet - light minimalist surface */}
             <View style={styles.sheet}>
               {/* Authority header */}
               <View style={styles.crestHeader}>
@@ -98,7 +98,7 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
 
               <Text style={styles.presentationText}>This is to officially certify that</Text>
 
-              {/* Recipient — largest, semibold */}
+              {/* Recipient - largest, semibold */}
               <View style={styles.recipientBlock}>
                 <Text style={styles.recipientName}>{certificate.recipient.name}</Text>
                 <Text style={styles.recipientHandle}>@{certificate.recipient.public_handle}</Text>
@@ -112,7 +112,7 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
                 <Text style={styles.highlightText}>{citizensCount.toLocaleString()} citizens</Text> across Municipal Corporation Ludhiana.
               </Text>
 
-              {/* Key impact stats — plain columns with dividers */}
+              {/* Key impact stats - plain columns with dividers */}
               <View style={styles.metricsRow}>
                 <View style={styles.metricCol}>
                   <Text style={styles.metricVal}>{verifiedTasksCount}</Text>
@@ -132,7 +132,7 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
                 </View>
               </View>
 
-              {/* Domain task rows — thin dividers, fixed-width counts */}
+              {/* Domain task rows - thin dividers, fixed-width counts */}
               <View style={styles.tableSection}>
                 <Text style={styles.tableTitle}>Accumulated Task Domains</Text>
                 {certificate.domains.map((dom, i) => (
@@ -183,7 +183,7 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
             </View>
           </ScrollView>
 
-          {/* Bottom actions — single orange primary */}
+          {/* Bottom actions - single orange primary */}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={styles.shareBtn}

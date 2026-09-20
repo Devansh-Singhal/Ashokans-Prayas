@@ -1,33 +1,46 @@
-import React from 'react';
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Share,
-} from 'react-native';
-import {
+  ImageOff,
   MapPin,
   Share2,
   ShieldCheck,
   ThumbsUp,
 } from 'lucide-react-native';
-import { Ticket, TicketCategory } from '../types';
+import React from 'react';
+import {
+  Image,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { COLORS } from '../constants/colors';
-import { SeverityMeter } from './SeverityMeter';
-import { StatusBadge } from './StatusBadge';
-import { BeforeAfterView } from './BeforeAfterView';
-import { GeofencePill } from './GeofencePill';
-import { calculateHaversineDistance } from '../services/location';
 import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
+import { calculateHaversineDistance } from '../services/location';
+import { Ticket, TicketCategory } from '../types';
+import { BeforeAfterView } from './BeforeAfterView';
 import {
   MonsoonPauseIcon,
-  PotholeDefectIcon,
-  WasteAccumulationIcon,
-  StreetlightDefectIcon,
   OpenDrainHazardIcon,
+  PotholeDefectIcon,
+  StreetlightDefectIcon,
+  WasteAccumulationIcon,
 } from './CivicIcons';
+import { GeofencePill } from './GeofencePill';
+import { SeverityMeter } from './SeverityMeter';
+import { StatusBadge } from './StatusBadge';
+
+// Stand-in photos, used when a post's own photo is missing or fails to load.
+const ROAD_DAMAGE_PHOTO =
+  'https://images.unsplash.com/photo-1742036953114-86479b041e81?fm=jpg&q=60&w=800&auto=format&fit=crop';
+const GARBAGE_PHOTO =
+  'https://images.unsplash.com/photo-1595061328915-ff7d850b7d26?fm=jpg&q=60&w=800&auto=format&fit=crop';
+
+const FALLBACK_PHOTOS: Partial<Record<TicketCategory, string>> = {
+  POTHOLE: ROAD_DAMAGE_PHOTO,
+  FOOTPATH_DAMAGE: ROAD_DAMAGE_PHOTO,
+  GARBAGE_ACCUMULATION: GARBAGE_PHOTO,
+};
 
 interface Props {
   ticket: Ticket;
@@ -76,6 +89,18 @@ export const CivicPostCard: React.FC<Props> = ({
   // makes the React Compiler's memoization unstable.
   const [nowMs] = React.useState(() => Date.now());
 
+  // Local-only like state: resets if the card unmounts (e.g. feed refresh).
+  const [liked, setLiked] = React.useState(false);
+  const [imageFailed, setImageFailed] = React.useState(false);
+  const [fallbackFailed, setFallbackFailed] = React.useState(false);
+  const upvoteCount = ticket.upvotes + (liked ? 1 : 0);
+  const usingFallback = !ticket.report_photo_url || imageFailed;
+  const photoUri = usingFallback
+    ? fallbackFailed
+      ? undefined
+      : FALLBACK_PHOTOS[ticket.category]
+    : ticket.report_photo_url;
+
   const formatTimeAgo = (dateStr: string) => {
     try {
       const diffSec = Math.floor((nowMs - new Date(dateStr).getTime()) / 1000);
@@ -99,6 +124,7 @@ export const CivicPostCard: React.FC<Props> = ({
   };
 
   const canVerify = ticket.status === 'PROVISIONAL_FIX';
+  const hasAuditRow = canVerify || ticket.status === 'WEATHER_OCCLUDED';
 
   const ticketTitle = (() => {
     switch (ticket.category) {
@@ -144,10 +170,22 @@ export const CivicPostCard: React.FC<Props> = ({
           {getCategoryIcon(ticket.category)}
           <Text style={styles.categoryText}>{ticket.category.replace(/_/g, ' ')}</Text>
         </View>
-        <View style={styles.upvotePill}>
-          <ThumbsUp size={12} color={COLORS.inkSoft} />
-          <Text style={styles.upvoteText}>{ticket.upvotes}</Text>
-        </View>
+        <TouchableOpacity
+          style={[styles.upvotePill, liked && styles.upvotePillActive]}
+          onPress={() => setLiked((v) => !v)}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={liked ? 'Remove upvote' : 'Upvote'}
+          accessibilityState={{ selected: liked }}
+        >
+          <ThumbsUp
+            size={12}
+            color={liked ? COLORS.orange : COLORS.inkSoft}
+            fill={liked ? COLORS.orange : 'none'}
+          />
+          <Text style={styles.upvoteText}>{upvoteCount}</Text>
+        </TouchableOpacity>
         <SeverityMeter severity={ticket.severity} />
       </View>
 
@@ -159,29 +197,52 @@ export const CivicPostCard: React.FC<Props> = ({
         </Text>
       </View>
 
-      {/* 4. Media Section: Single Photo OR Before/After Slider */}
-      {ticket.status === 'PROVISIONAL_FIX' && ticket.resolution_photo_url ? (
-        <BeforeAfterView
-          beforeUrl={ticket.report_photo_url}
-          afterUrl={ticket.resolution_photo_url}
-        />
-      ) : (
-        <View style={styles.singleImageContainer}>
-          <Image
-            source={{ uri: ticket.report_photo_url }}
-            style={styles.mainImage}
-            resizeMode="cover"
+      {/* 4. Media Section: Single Photo OR Before/After Slider, share overlaid bottom-right */}
+      <View style={styles.mediaWrap}>
+        {ticket.status === 'PROVISIONAL_FIX' && ticket.resolution_photo_url ? (
+          <BeforeAfterView
+            beforeUrl={ticket.report_photo_url}
+            afterUrl={ticket.resolution_photo_url}
           />
-          {ticket.status === 'WEATHER_OCCLUDED' && (
-            <View style={styles.weatherBanner}>
-              <MonsoonPauseIcon size={16} color="#38BDF8" />
-              <Text style={styles.weatherBannerText}>
-                Monsoon Pause • Submerged road hazard. SLA paused until drainage clears.
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
+        ) : (
+          <View style={styles.singleImageContainer}>
+            {photoUri ? (
+              <Image
+                source={{ uri: photoUri }}
+                style={styles.mainImage}
+                resizeMode="cover"
+                onError={() =>
+                  usingFallback ? setFallbackFailed(true) : setImageFailed(true)
+                }
+              />
+            ) : (
+              <View style={styles.imageFallback}>
+                <ImageOff size={24} color="#64748B" />
+                <Text style={styles.imageFallbackText}>No photo available</Text>
+              </View>
+            )}
+            {ticket.status === 'WEATHER_OCCLUDED' && (
+              <View style={styles.weatherBanner}>
+                <MonsoonPauseIcon size={16} color="#38BDF8" />
+                <Text style={styles.weatherBannerText}>
+                  Monsoon Pause • Submerged road hazard. SLA paused until drainage clears.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+        <TouchableOpacity
+          style={styles.shareOverlay}
+          onPress={handleShare}
+          activeOpacity={0.8}
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Share ${ticket.category.replace(/_/g, ' ')} report`}
+          accessibilityHint="Opens the share sheet with ticket details"
+        >
+          <Share2 size={16} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
 
       {/* 5. Geofence Distance Indicator */}
       {canVerify && (
@@ -190,52 +251,39 @@ export const CivicPostCard: React.FC<Props> = ({
         </View>
       )}
 
-      {/* 6. Audit & Share Actions */}
-      <View style={styles.actionContainer}>
-        <View style={styles.secondaryActions}>
-          {canVerify ? (
-            <TouchableOpacity
-              style={[
-                styles.verifyButton,
-                distance <= 5 ? styles.verifyButtonActive : styles.verifyButtonDisabled,
-              ]}
-              onPress={() => onVerifyPress(ticket)}
-              disabled={distance > 5}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: distance > 5 }}
-            >
-              <ShieldCheck size={16} color={distance <= 5 ? '#0B1B2F' : '#FFFFFF'} />
-              <Text style={[styles.verifyButtonText, distance > 5 && { color: '#FFFFFF' }]}>
-                {distance <= 5 ? 'Audit fix (+150 pts)' : 'Move within 5m'}
-              </Text>
-            </TouchableOpacity>
-          ) : ticket.status === 'WEATHER_OCCLUDED' ? (
-            <View
-              style={styles.occludedPill}
-              accessibilityLabel="Submerged — audit paused"
-              accessible={true}
-            >
-              <Text style={styles.occludedText}>Submerged — audit paused</Text>
-            </View>
-          ) : (
-            ticket.status === 'RESOLVED' && (
-              <Text style={styles.resolvedText}>Verified Clean</Text>
-            )
-          )}
-
-          <TouchableOpacity
-            style={styles.shareButton}
-            onPress={handleShare}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Share ${ticket.category.replace(/_/g, ' ')} report`}
-            accessibilityHint="Opens the share sheet with ticket details"
-          >
-            <Share2 size={16} color="#64748B" />
-          </TouchableOpacity>
+      {/* 6. Audit action: only rendered when there is one to show */}
+      {hasAuditRow && (
+        <View style={styles.actionContainer}>
+          <View style={styles.secondaryActions}>
+            {canVerify ? (
+              <TouchableOpacity
+                style={[
+                  styles.verifyButton,
+                  distance <= 5 ? styles.verifyButtonActive : styles.verifyButtonDisabled,
+                ]}
+                onPress={() => onVerifyPress(ticket)}
+                disabled={distance > 5}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: distance > 5 }}
+              >
+                <ShieldCheck size={16} color={distance <= 5 ? '#0B1B2F' : '#FFFFFF'} />
+                <Text style={[styles.verifyButtonText, distance > 5 && { color: '#FFFFFF' }]}>
+                  {distance <= 5 ? 'Audit fix (+150 pts)' : 'Move within 5m'}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View
+                style={styles.occludedPill}
+                accessibilityLabel="Submerged — audit paused"
+                accessible={true}
+              >
+                <Text style={styles.occludedText}>Submerged — audit paused</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 };
@@ -303,6 +351,7 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
     marginBottom: 8,
   },
@@ -333,6 +382,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+  upvotePillActive: {
+    borderColor: COLORS.orange,
+  },
   upvoteText: {
     ...TYPOGRAPHY.captionStrong,
     ...NUMERIC,
@@ -362,13 +414,24 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  imageFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  imageFallbackText: {
+    ...TYPOGRAPHY.caption,
+    color: '#64748B',
+  },
   weatherBanner: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#0B1B2F',
-    paddingHorizontal: 12,
+    paddingLeft: 12,
+    paddingRight: 56,
     paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -421,11 +484,6 @@ const styles = StyleSheet.create({
     ...NUMERIC,
     color: COLORS.onOrange,
   },
-  resolvedText: {
-    ...TYPOGRAPHY.bodySmStrong,
-    color: COLORS.verified,
-    paddingVertical: 8,
-  },
   occludedPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -440,13 +498,17 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmStrong,
     color: '#64748B',
   },
-  shareButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  mediaWrap: {
+    position: 'relative',
+  },
+  shareOverlay: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(11, 27, 47, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },

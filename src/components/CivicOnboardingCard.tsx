@@ -1,9 +1,9 @@
+import { ChevronDown, ChevronUp, ShieldCheck, X } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { X, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react-native';
-import { StepSpotIcon, StepEscalateIcon, StepAuditIcon } from './CivicIcons';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { CAPS_LABEL, TYPOGRAPHY } from '../constants/typography';
+import { StepAuditIcon, StepEscalateIcon, StepSpotIcon } from './CivicIcons';
 
 export const CivicOnboardingCard: React.FC = () => {
   // TODO: persist dismiss via AsyncStorage
@@ -66,7 +66,7 @@ export const CivicOnboardingCard: React.FC = () => {
                 accessible={true}
                 accessibilityLabel="Earns 50 escrow points"
               >
-                Spot — earns 50 pts
+                Spot - earns 50 pts
               </Text>
               <Text style={styles.stepDesc}>
                 Photograph road hazards with GPS to notify the Ludhiana Municipal Corporation.
@@ -86,7 +86,7 @@ export const CivicOnboardingCard: React.FC = () => {
                 accessible={true}
                 accessibilityLabel="Repair photo uploaded by municipal crew"
               >
-                Fix — crew upload
+                Fix - crew upload
               </Text>
               <Text style={styles.stepDesc}>
                 Municipal crews upload a repair photo, marking the defect ready for audit.
@@ -106,7 +106,7 @@ export const CivicOnboardingCard: React.FC = () => {
                 accessible={true}
                 accessibilityLabel="Earns 150 audit points"
               >
-                Audit — earns 150 pts
+                Audit - earns 150 pts
               </Text>
               <Text style={styles.stepDesc}>
                 When contractors upload a fix, walk within 5m to inspect and close the ticket.

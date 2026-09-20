@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  RefreshControl,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { CivicPostCard } from '../components/CivicPostCard';
-import { CivicOnboardingCard } from '../components/CivicOnboardingCard';
 import { AntiCheatModal } from '../components/AntiCheatModal';
-import { Ticket, TicketCategory, VerificationResult } from '../types';
-import { api } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { getCurrentGPS } from '../services/location';
+import { CivicOnboardingCard } from '../components/CivicOnboardingCard';
+import { CivicPostCard } from '../components/CivicPostCard';
 import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
-import { Sparkles } from 'lucide-react-native';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
+import { getCurrentGPS } from '../services/location';
+import { Ticket, VerificationResult } from '../types';
 
 export const FeedScreen: React.FC = () => {
   const { currentUser, updatePoints, logContribution } = useAuth();
@@ -125,7 +125,7 @@ export const FeedScreen: React.FC = () => {
     <View style={styles.container}>
       {usingFallback && (
         <View style={styles.fallbackBanner}>
-          <Text style={styles.fallbackText}>Demo location — enable GPS for live audit</Text>
+          <Text style={styles.fallbackText}>Demo location - enable GPS for live audit</Text>
         </View>
       )}
       {/* Category Filter Pills */}

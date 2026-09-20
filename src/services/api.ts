@@ -35,7 +35,7 @@ export { ExpoFile };
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // MapTiler Streets raster tiles (free-tier demo key committed as default; override
-// per-environment with EXPO_PUBLIC_MAPTILER_KEY). Treated as public — rotate after demo.
+// per-environment with EXPO_PUBLIC_MAPTILER_KEY). Treated as public - rotate after demo.
 export const MAPTILER_KEY = process.env.EXPO_PUBLIC_MAPTILER_KEY ?? 'NDORbzgPBgzNteLrMF1u';
 
 async function timedFetch(url: string, init?: RequestInit, ms: number = 20000): Promise<Response> {
@@ -64,18 +64,18 @@ const DUMMY_JPEG = new Uint8Array([
  *
  * NOTE: The error `[Error: Unsupported FormDataPart implementation]` happens because
  * Expo's `expo/fetch` engine only accepts FormData parts that are strings, real Blob
- * instances, or objects with a `.bytes()` method — the legacy `{ uri, name, type }`
+ * instances, or objects with a `.bytes()` method - the legacy `{ uri, name, type }`
  * object (and fetching a `file://` URI, which is unreliable on-device) are rejected.
  *
  * Strategy 1: Native local file (camera / gallery pick, `file://` / `content://` / `ph://`):
  *             hand the expo-file-system `File` instance (a Blob subclass) directly to
- *             FormData — the only form Expo's fetch engine accepts for local files.
+ *             FormData - the only form Expo's fetch engine accepts for local files.
  * Strategy 2: Remote/http(s) URI (web browser or Node test environment): fetch it
  *             directly and append the resulting Blob.
- * Strategy 3: Last-resort fallback (offline demo / unreadable file) — append a tiny
+ * Strategy 3: Last-resort fallback (offline demo / unreadable file) - append a tiny
  *             valid dummy JPEG so the request is never blocked entirely.
  *
- * CRITICAL: NEVER fall back to `{ uri, name, type } as any` — that is the exact object
+ * CRITICAL: NEVER fall back to `{ uri, name, type } as any` - that is the exact object
  * shape that triggers `[Error: Unsupported FormDataPart implementation]`.
  */
 export async function appendPhotoToFormData(
@@ -96,18 +96,18 @@ export async function appendPhotoToFormData(
   const isNativeFileUri =
     photoUri.startsWith('file://') || photoUri.startsWith('content://') || photoUri.startsWith('ph://');
 
-  // Strategy 1: native local file — append the ExpoFile instance directly.
+  // Strategy 1: native local file - append the ExpoFile instance directly.
   if (isNativeFileUri && ExpoFile) {
     try {
       const file = new ExpoFile(photoUri);
       formData.append(fieldName, file as unknown as Blob, filename);
       return;
     } catch {
-      // ExpoFile unavailable or failed to read — fall through to remaining strategies
+      // ExpoFile unavailable or failed to read - fall through to remaining strategies
     }
   }
 
-  // Strategy 2: remote/http(s) URI — fetch and append the resulting Blob.
+  // Strategy 2: remote/http(s) URI - fetch and append the resulting Blob.
   if (photoUri.startsWith('http://') || photoUri.startsWith('https://')) {
     try {
       const res = await fetch(photoUri);
@@ -126,7 +126,7 @@ export async function appendPhotoToFormData(
     }
   }
 
-  // Strategy 2b: local file:// URI without ExpoFile (e.g. Node test env) — read via fs.
+  // Strategy 2b: local file:// URI without ExpoFile (e.g. Node test env) - read via fs.
   let fallbackBytes: Uint8Array = DUMMY_JPEG;
   if (typeof window === 'undefined' && photoUri.startsWith('file://')) {
     try {

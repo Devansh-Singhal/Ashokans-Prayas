@@ -1,4 +1,4 @@
-// CivicFeed palette — Navy / Orange / Amber / Warm white / Mist / Verified green
+// CivicFeed palette - Navy / Orange / Amber / Warm white / Mist / Verified green
 export const COLORS = {
   // Brand
   navy: '#0B1B2F',

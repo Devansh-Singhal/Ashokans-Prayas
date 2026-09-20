@@ -18,16 +18,16 @@ import {
 import { SeverityMeter } from '../components/SeverityMeter';
 import { ShowMap } from '../components/showMap';
 import { StatusBadge } from '../components/StatusBadge';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 import { api } from '../services/api';
 import { calculateHaversineDistance, getCurrentGPS, WARD_14_LUDHIANA } from '../services/location';
 import { Ticket } from '../types';
-import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 type FilterType = 'ALL' | 'REPORTED' | 'PROVISIONAL_FIX' | 'RESOLVED' | 'WEATHER_OCCLUDED';
 
 const ward = {
   wardId: WARD_14_LUDHIANA.wardId,
-  fallbackLabel: 'Demo location — enable GPS for live audit',
+  fallbackLabel: 'Demo location - enable GPS for live audit',
   emptyPlace: WARD_14_LUDHIANA.shortLabel,
   area: {
     center: { ...WARD_14_LUDHIANA.center },
@@ -319,7 +319,7 @@ export const MapScreen: React.FC = () => {
               <View style={styles.auditPromptBox}>
                 <ShieldCheck size={16} color="#10B981" />
                 <Text style={styles.auditPromptText} numberOfLines={2}>
-                  Fix ready for citizen audit — verify it in the feed
+                  Fix ready for citizen audit - verify it in the feed
                 </Text>
               </View>
             </View>

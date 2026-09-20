@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { Ticket } from '../types';
+import { Platform, StyleSheet, View } from 'react-native';
 import { MAPTILER_KEY } from '../services/api';
+import { Ticket } from '../types';
 
 // Shared area config consumed by both the web Leaflet map and the native
 // react-native-maps implementation.
@@ -175,7 +175,7 @@ export function InteractiveMap({
     const userLng = ${userCoords.longitude};
 
     // Map starts on the ward frame; then fitPins() pulls every visible pin
-    // (plus the user dot) into view. A selected pin recenters via flyTo —
+    // (plus the user dot) into view. A selected pin recenters via flyTo -
     // never from an arbitrary hardcoded position.
     var fallbackLat = ${fallbackCenter.latitude};
     var fallbackLng = ${fallbackCenter.longitude};
@@ -188,7 +188,7 @@ export function InteractiveMap({
     });
 
     // MapTiler Streets primary; thresholded OSM fallback if the key is rejected.
-    // A single bad tile never triggers the swap — 4 errors with zero loads do.
+    // A single bad tile never triggers the swap - 4 errors with zero loads do.
     var mapAttribution = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
     var primaryTiles = L.tileLayer('${maptilerUrl}', {
       attribution: mapAttribution,
@@ -288,7 +288,7 @@ export function InteractiveMap({
 
     // Fit every visible pin (plus the user dot) in frame. Runs once at load
     // and again whenever the ticket set changes (filters) since the whole
-    // page regenerates with fresh ticketsData. No-op on an empty set — the
+    // page regenerates with fresh ticketsData. No-op on an empty set - the
     // ward frame stays. Max zoom 16 keeps pins from stacking on each other.
     function fitPins() {
       var bounds = L.latLngBounds([]);

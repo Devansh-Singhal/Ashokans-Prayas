@@ -16,7 +16,7 @@ export interface ContributionGroup {
   kinds: Contribution['kind'][];
 }
 
-// Dedupes by (kind, id) — the same ticket can appear once as a REPORT and once
+// Dedupes by (kind, id) - the same ticket can appear once as a REPORT and once
 // as a VERIFICATION, but re-logging the same event twice must not double-count.
 export function groupContributions(list: Contribution[]): ContributionGroup[] {
   const seen = new Set<string>();
@@ -48,7 +48,7 @@ export interface CertificateEligibility {
 const MIN_CONTRIBUTIONS = 5;
 const MIN_GROUPS = 2;
 
-// Eligibility is based on deduped, verifiable contributions only — not on
+// Eligibility is based on deduped, verifiable contributions only - not on
 // `verified_hours`, which is fabricated client-side and not backed by the server.
 export function certificateEligibility(
   list: Contribution[],

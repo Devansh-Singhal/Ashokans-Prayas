@@ -1,6 +1,6 @@
+import { BarChart3, Camera, Map, Newspaper, User } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { BarChart3, Camera, Map, Newspaper, User } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { COLORS } from '@/constants/colors';
@@ -16,7 +16,7 @@ const TABS: { key: TabKey; label: string; icon: typeof Newspaper }[] = [
 ];
 
 // Geometry from the Figma frame (bar-relative px).
-const BAR_H = 80;
+const BAR_H = 54;
 const OVERHANG = 20; // circle sticks out above the bar
 const PAD = 12; // horizontal padding inside the bar (5 tabs need tighter gutters than 4)
 const CIRCLE = 58;
@@ -24,7 +24,7 @@ const NOTCH_HALF = 45; // notch is 90 wide, 45 deep
 
 const BAR_COLOR = COLORS.navDark;
 const ACCENT = COLORS.orange;
-const ICON_ACTIVE = COLORS.onOrange; // navy on orange — white fails contrast per the palette
+const ICON_ACTIVE = COLORS.onOrange; // navy on orange - white fails contrast per the palette
 const ICON_IDLE = COLORS.white;
 
 function Icon({ Cmp, color }: { Cmp: typeof Newspaper; color: string }) {
@@ -34,7 +34,7 @@ function Icon({ Cmp, color }: { Cmp: typeof Newspaper; color: string }) {
 // Bar outline (top radius 5, bottom radius 30) with a real notch cut out at cx.
 // half adapts so the scoop never runs past the bar edge on narrow phones.
 // The shoulder offsets scale with k = half / NOTCH_HALF, so the scoop keeps
-// its symmetric shape at every width — k is 1 on middle tabs, pixel-identical
+// its symmetric shape at every width - k is 1 on middle tabs, pixel-identical
 // to the Figma curve. Depth (y) is never scaled, so the circle nests the same.
 function barPath(w: number, cx: number, half: number) {
   const l = cx - half;
@@ -49,8 +49,7 @@ function barPath(w: number, cx: number, half: number) {
     `C${cx + x(26.034)} 45 ${cx + x(30.68)} 28.114 ${cx + x(34.279)} 15.03`,
     `C${cx + x(36.556)} 6.754 ${cx + x(38.414)} 0 ${r} 0`,
     `H${w - 5}C${w - 2.239} 0 ${w} 2.239 ${w} 5`,
-    `V50C${w} 66.569 ${w - 13.431} 80 ${w - 30} 80`,
-    'H30C13.431 80 0 66.569 0 50Z',
+    `V${BAR_H}H0Z`,
   ].join('');
 }
 
@@ -63,7 +62,7 @@ export default function BottomTabBar({ active, onChange }: Props) {
   const [width, setWidth] = useState(0);
   const slot = (width - PAD * 2) / TABS.length;
   const activeIndex = TABS.findIndex((t) => t.key === active);
-  // True slot center — never shifted. The orange circle always sits here,
+  // True slot center - never shifted. The orange circle always sits here,
   // exactly like the camera tab's. Only the scoop's shoulders adapt.
   const notchX = PAD + slot * (activeIndex + 0.5);
   const half = Math.min(

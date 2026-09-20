@@ -1,8 +1,8 @@
+import { CheckCircle2, ShieldAlert, TrendingDown, Users } from 'lucide-react-native';
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
-import { ShieldAlert, Users, TrendingDown, CheckCircle2 } from 'lucide-react-native';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { NUMERIC, TYPOGRAPHY } from '../constants/typography';
 import { VerificationResult } from '../types';
-import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 interface Props {
   visible: boolean;
@@ -18,12 +18,12 @@ export const AntiCheatModal: React.FC<Props> = ({ visible, result, onClose }) =>
   const needsEvidence = result.credited_points === 0;
 
   const title = needsEvidence
-    ? 'Audit Recorded — Evidence Needed'
+    ? 'Audit Recorded - Evidence Needed'
     : isCollusion
       ? 'Anti-Collusion Protection Activated'
       : 'Verified Clean & Credited!';
   const subtitle = needsEvidence
-    ? 'Your audit was recorded but no points were credited yet — a provisional fix photo is required before credit.'
+    ? 'Your audit was recorded but no points were credited yet - a provisional fix photo is required before credit.'
     : isCollusion
       ? 'Our game-theoretic Reciprocity Decay engine detected repeated mutual verification with this reporter.'
       : 'You successfully verified an independent citizen report. Full audit credit awarded!';

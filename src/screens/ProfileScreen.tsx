@@ -1,13 +1,13 @@
+import { Award, CheckCircle2, Download, Eye, FileText, ShieldCheck } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { OfficialCertificateModal } from '../components/OfficialCertificateModal';
+import { COLORS } from '../constants/colors';
+import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { CertificateData, Contribution, UserTasksResponse } from '../types';
-import { groupContributions, certificateEligibility } from '../utils/contributions';
-import { COLORS } from '../constants/colors';
-import { OfficialCertificateModal } from '../components/OfficialCertificateModal';
-import { ShieldCheck, Award, FileText, CheckCircle2, Download, Eye } from 'lucide-react-native';
-import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
+import { certificateEligibility, groupContributions } from '../utils/contributions';
 
 type ProfileTab = 'overview' | 'certificate';
 
@@ -39,7 +39,7 @@ export const ProfileScreen: React.FC = () => {
           }));
         if (!cancelled) setServerReports(mine);
       } catch {
-        // Offline/demo fallback — the certificate still works off in-session contributions.
+        // Offline/demo fallback - the certificate still works off in-session contributions.
       }
     })();
     return () => {
@@ -113,7 +113,7 @@ export const ProfileScreen: React.FC = () => {
           >
             {currentUser.consent_status === 'ACTIVE'
               ? 'Civic Identity Verified'
-              : 'Verification Pending — parent consent required'}
+              : 'Verification Pending - parent consent required'}
           </Text>
         </View>
       </View>
@@ -194,12 +194,12 @@ export const ProfileScreen: React.FC = () => {
             </View>
             {!backendLive && !tasksLoading && (
               <Text style={styles.offlineNote}>
-                Offline — showing contributions from this session{tasksError ? ` (${tasksError})` : ''}.
+                Offline - showing contributions from this session{tasksError ? ` (${tasksError})` : ''}.
               </Text>
             )}
           </View>
 
-          {/* Grouped contributions — server domains when live, local fallback otherwise */}
+          {/* Grouped contributions - server domains when live, local fallback otherwise */}
           {tasksLoading ? (
             <View style={styles.statCard}>
               <ActivityIndicator size="small" color={COLORS.navy} />
@@ -230,28 +230,28 @@ export const ProfileScreen: React.FC = () => {
               )}
             </View>
           ) : (
-          <View style={styles.statCard}>
-            <Text style={styles.groupsTitle}>Civic Contributions by Category</Text>
-            {groups.length === 0 ? (
-              <Text style={styles.emptyGroupsText}>
-                No verified contributions yet. File a report or complete an audit to start building your certificate.
-              </Text>
-            ) : (
-              groups.map((g) => (
-                <View key={g.group} style={styles.groupRow}>
-                  <View style={styles.groupInfo}>
-                    <Text style={styles.groupName} numberOfLines={2}>{g.group}</Text>
+            <View style={styles.statCard}>
+              <Text style={styles.groupsTitle}>Civic Contributions by Category</Text>
+              {groups.length === 0 ? (
+                <Text style={styles.emptyGroupsText}>
+                  No verified contributions yet. File a report or complete an audit to start building your certificate.
+                </Text>
+              ) : (
+                groups.map((g) => (
+                  <View key={g.group} style={styles.groupRow}>
+                    <View style={styles.groupInfo}>
+                      <Text style={styles.groupName} numberOfLines={2}>{g.group}</Text>
+                    </View>
+                    <View style={styles.groupCountWrap}>
+                      <Text style={styles.groupCountText}>{g.count}</Text>
+                    </View>
                   </View>
-                  <View style={styles.groupCountWrap}>
-                    <Text style={styles.groupCountText}>{g.count}</Text>
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
+                ))
+              )}
+            </View>
           )}
 
-          {/* Eligibility status — plain text row, semantic color */}
+          {/* Eligibility status - plain text row, semantic color */}
           <View style={styles.eligibilityRow}>
             <CheckCircle2 size={18} color={eligibility.eligible ? COLORS.verified : '#92400E'} />
             <Text
@@ -264,7 +264,7 @@ export const ProfileScreen: React.FC = () => {
             </Text>
           </View>
 
-          {/* View Certificate — opens the official modal via the backend */}
+          {/* View Certificate - opens the official modal via the backend */}
           <TouchableOpacity
             style={[styles.downloadButton, styles.viewButton]}
             onPress={handleViewCertificate}

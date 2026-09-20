@@ -1,33 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
-  ScrollView,
-  TextInput,
-  Alert,
-} from 'react-native';
-import {
-  Camera,
-  MapPin,
-  Sparkles,
-  CheckCircle2,
-  RotateCcw,
-  AlertCircle,
-  Building2,
-  HelpCircle,
-  Edit3,
-  ShieldAlert,
-  ChevronDown,
-  X,
-} from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { api } from '../services/api';
+import {
+  AlertCircle,
+  Building2,
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  Edit3,
+  HelpCircle,
+  MapPin,
+  RotateCcw,
+  ShieldAlert,
+  Sparkles,
+  X,
+} from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 import { TicketCategory } from '../types';
 
 const STANDARD_DEPARTMENTS = [
@@ -227,7 +227,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ onClose, onSuccess }
       if (msg.startsWith('DUPLICATE:')) {
         setErrorMessage('Already mapped nearby. Check the feed for the existing ticket.');
       } else if (msg.includes('NEEDS_CLARIFICATION')) {
-        setErrorMessage('AI could not classify with sufficient confidence — please retake with clearer framing.');
+        setErrorMessage('AI could not classify with sufficient confidence - please retake with clearer framing.');
       } else {
         setErrorMessage(msg || 'Failed to publish report. Please try again.');
       }
