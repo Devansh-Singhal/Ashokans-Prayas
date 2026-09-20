@@ -8,19 +8,50 @@ import {
   Modal,
 } from 'react-native';
 import { useAuth, DEMO_PERSONAS } from '../context/AuthContext';
-import { Award, Info, X, ShieldCheck, UserCheck, Smartphone } from 'lucide-react-native';
+import { Award, Info, X, ShieldCheck, UserCheck, Smartphone, ChevronDown } from 'lucide-react-native';
 import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
 
 export const PersonaBar: React.FC = () => {
   const { currentPersona, switchPersona, currentUser } = useAuth();
   const [showExplainer, setShowExplainer] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.headerRow}
+        onPress={() => setExpanded((v) => !v)}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={expanded ? 'Collapse demo personas' : 'Expand demo personas'}
+        accessibilityState={{ expanded }}
+      >
+        <View style={[styles.avatar, { backgroundColor: currentPersona.avatarColor }]}>
+          <Text style={styles.avatarLetter}>{currentPersona.name.charAt(0)}</Text>
+        </View>
+        <View style={styles.headerText}>
+          <View style={styles.liveTag}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>STAGE DEMO PERSONA</Text>
+            <ChevronDown
+              size={14}
+              color="#94A3B8"
+              style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}
+            />
+          </View>
+          <Text style={styles.currentName} numberOfLines={1}>
+            {currentPersona.name} • {currentUser.points_balance} pts
+          </Text>
+        </View>
+        <View style={styles.pointsBadge}>
+          <Award size={13} color="#F59E0B" />
+          <Text style={styles.pointsText}>{currentUser.points_balance} pts</Text>
+        </View>
+      </TouchableOpacity>
+      {expanded && (
+      <>
       <View style={styles.topRow}>
         <View style={styles.liveTag}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>STAGE DEMO PERSONA</Text>
           <TouchableOpacity
             style={styles.infoButton}
             onPress={() => setShowExplainer(true)}
@@ -31,11 +62,6 @@ export const PersonaBar: React.FC = () => {
           >
             <Info size={13} color="#38BDF8" />
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.pointsBadge}>
-          <Award size={13} color="#F59E0B" />
-          <Text style={styles.pointsText}>{currentUser.points_balance} pts</Text>
         </View>
       </View>
 
@@ -72,6 +98,8 @@ export const PersonaBar: React.FC = () => {
           );
         })}
       </ScrollView>
+      </>
+      )}
 
       {/* Stage Demo Explainer Modal */}
       <Modal
@@ -175,6 +203,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 44,
+  },
+  headerText: {
+    flex: 1,
+    flexShrink: 1,
+  },
+  currentName: {
+    ...TYPOGRAPHY.captionStrong,
+    color: '#F8FAFC',
+    marginTop: 2,
   },
   liveTag: {
     flexDirection: 'row',

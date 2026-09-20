@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { TicketStatus } from '../types';
+import { COLORS } from '../constants/colors';
 import { TYPOGRAPHY } from '../constants/typography';
 
 interface Props {
@@ -12,42 +13,37 @@ export const StatusBadge: React.FC<Props> = ({ status }) => {
     switch (status) {
       case 'REPORTED':
         return {
-          bg: '#FEF2F2',
-          border: '#FECACA',
-          text: '#DC2626',
-          dot: '#EF4444',
+          bg: '#FDECEA',
+          border: COLORS.danger,
+          text: COLORS.danger,
           label: 'Reported',
         };
       case 'PROVISIONAL_FIX':
         return {
-          bg: '#FFFBEB',
-          border: '#FDE68A',
-          text: '#D97706',
-          dot: '#F59E0B',
+          bg: '#FEF3C7',
+          border: COLORS.amber,
+          text: '#92400E',
           label: 'Fix Uploaded (Audit Needed)',
         };
       case 'RESOLVED':
         return {
-          bg: '#F0FDF4',
-          border: '#BBF7D0',
-          text: '#16A34A',
-          dot: '#10B981',
-          label: 'Verified & Closed',
+          bg: '#E6F7EE',
+          border: COLORS.verified,
+          text: COLORS.verified,
+          label: 'Verified Clean',
         };
       case 'WEATHER_OCCLUDED':
         return {
-          bg: '#EFF6FF',
-          border: '#BFDBFE',
-          text: '#2563EB',
-          dot: '#3B82F6',
+          bg: '#EAF2FA',
+          border: COLORS.info,
+          text: COLORS.info,
           label: 'Submerged (Pause Mode)',
         };
       default:
         return {
-          bg: '#F8FAFC',
-          border: '#E2E8F0',
-          text: '#64748B',
-          dot: '#94A3B8',
+          bg: COLORS.neuSurface,
+          border: COLORS.mist,
+          text: COLORS.neuMuted,
           label: status,
         };
     }
@@ -61,7 +57,6 @@ export const StatusBadge: React.FC<Props> = ({ status }) => {
       accessibilityLabel={`Status ${meta.label}`}
       accessible={true}
     >
-      <View style={[styles.dot, { backgroundColor: meta.dot }]} />
       <Text style={[styles.label, { color: meta.text }]}>{meta.label}</Text>
     </View>
   );
@@ -73,17 +68,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    gap: 6,
     alignSelf: 'flex-start',
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
   },
   label: {
     ...TYPOGRAPHY.captionStrong,
+    textAlign: 'left',
   },
 });

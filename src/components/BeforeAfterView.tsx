@@ -17,10 +17,12 @@ export const BeforeAfterView: React.FC<Props> = ({ beforeUrl, afterUrl }) => {
           style={[styles.tab, activeTab === 'before' && styles.activeTab]}
           onPress={() => setActiveTab('before')}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityState={{ selected: activeTab === 'before' }}
+          accessibilityLabel="Show before photo"
         >
-          <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
-          <Text style={[styles.tabText, activeTab === 'before' && styles.activeTabText]}>
-            BEFORE (Reported)
+          <Text style={[styles.tabText, activeTab === 'before' && styles.activeTabText]} numberOfLines={1}>
+            Before
           </Text>
         </TouchableOpacity>
 
@@ -28,10 +30,12 @@ export const BeforeAfterView: React.FC<Props> = ({ beforeUrl, afterUrl }) => {
           style={[styles.tab, activeTab === 'after' && styles.activeTab]}
           onPress={() => setActiveTab('after')}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityState={{ selected: activeTab === 'after' }}
+          accessibilityLabel="Show after photo"
         >
-          <View style={[styles.dot, { backgroundColor: '#10B981' }]} />
-          <Text style={[styles.tabText, activeTab === 'after' && styles.activeTabText]}>
-            AFTER (Fix Uploaded)
+          <Text style={[styles.tabText, activeTab === 'after' && styles.activeTabText]} numberOfLines={1}>
+            After
           </Text>
         </TouchableOpacity>
       </View>
@@ -42,11 +46,6 @@ export const BeforeAfterView: React.FC<Props> = ({ beforeUrl, afterUrl }) => {
           style={styles.image}
           resizeMode="cover"
         />
-        <View style={styles.pillOverlay}>
-          <Text style={styles.pillText}>
-            {activeTab === 'before' ? 'ORIGINAL CITIZEN REPORT' : 'CONTRACTOR PROVISIONAL REPAIR'}
-          </Text>
-        </View>
       </View>
     </View>
   );
@@ -61,46 +60,37 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    padding: 4,
-    borderRadius: 10,
-    margin: 8,
-    gap: 4,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    gap: 16,
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 8,
-    gap: 6,
+    minHeight: 44,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
   activeTab: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    borderBottomColor: '#FF7A00',
   },
   tabText: {
     ...TYPOGRAPHY.captionStrong,
     ...CAPS_LABEL,
     color: '#64748B',
+    textAlign: 'center',
   },
   activeTabText: {
     ...TYPOGRAPHY.captionStrong,
     ...CAPS_LABEL,
-    color: '#0F172A',
+    color: '#0B1B2F',
+    textAlign: 'center',
   },
   imageWrapper: {
-    position: 'relative',
     width: '100%',
     height: 220,
     backgroundColor: '#E2E8F0',
@@ -108,19 +98,5 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-  },
-  pillOverlay: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  pillText: {
-    ...TYPOGRAPHY.micro,
-    ...CAPS_LABEL,
-    color: '#FFFFFF',
   },
 });

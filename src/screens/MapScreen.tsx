@@ -274,8 +274,8 @@ export const MapScreen: React.FC = () => {
           <View style={styles.drawerHeader}>
             <View style={styles.drawerCategoryBadge}>
               {getCategoryIcon(selectedTicket.category)}
-              <Text style={styles.drawerCategoryText}>
-                {selectedTicket.category.replace('_', ' ')}
+              <Text style={styles.drawerCategoryText} numberOfLines={1}>
+                {selectedTicket.category.replace(/_/g, ' ')}
               </Text>
             </View>
             <StatusBadge status={selectedTicket.status} />
@@ -303,7 +303,7 @@ export const MapScreen: React.FC = () => {
 
               <View style={styles.distanceRow}>
                 <Navigation size={13} color="#38BDF8" />
-                <Text style={styles.distanceText}>
+                <Text style={styles.distanceText} numberOfLines={2}>
                   {selectedDistance !== null
                     ? `${selectedDistance < 1000 ? `${Math.round(selectedDistance)}m` : `${(selectedDistance / 1000).toFixed(1)}km`} away`
                     : ward.emptyPlace}
@@ -314,14 +314,16 @@ export const MapScreen: React.FC = () => {
           </View>
 
           {/* Drawer Actions */}
-          <View style={styles.actionRow}>
-            {selectedTicket.status === 'PROVISIONAL_FIX' && (
+          {selectedTicket.status === 'PROVISIONAL_FIX' && (
+            <View style={styles.actionRow}>
               <View style={styles.auditPromptBox}>
                 <ShieldCheck size={16} color="#10B981" />
-                <Text style={styles.auditPromptText}>Fix ready for citizen audit — verify it in the feed</Text>
+                <Text style={styles.auditPromptText} numberOfLines={2}>
+                  Fix ready for citizen audit — verify it in the feed
+                </Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
         </View>
       )}
     </View>

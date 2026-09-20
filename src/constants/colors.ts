@@ -37,6 +37,12 @@ export const COLORS = {
   neuDark: '#B9C2CE',
   neuText: '#0B1B2F',
   neuMuted: '#6B7A90',
+  neuSurface: '#F1F5F9',
+  neuBorder: '#D3DBE4',
+
+  // Semantic (flat, readable on white at full opacity)
+  danger: '#C0392B',
+  info: '#1D5C99',
 
   // Legacy alias (was Figma orange)
   purple: '#FF7A00',

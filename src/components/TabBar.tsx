@@ -31,6 +31,9 @@ export function TabBar() {
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      {insets.bottom > 0 && (
+        <View style={[styles.insetFill, { height: insets.bottom }]} />
+      )}
       <BottomTabBar
         active={active}
         // navigate (not push) so tapping tabs never stacks history
@@ -46,6 +49,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: COLORS.background,
+    // Transparent so the carved-out scoop in the navy bar stays open
+    // (a solid fill here would paint over the notch and kill the curve).
+    backgroundColor: 'transparent',
+  },
+  // Navy strip only behind the safe-area inset so no white gap shows
+  // below the bar. The bar itself keeps its compact shape/height.
+  insetFill: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.navDark,
   },
 });

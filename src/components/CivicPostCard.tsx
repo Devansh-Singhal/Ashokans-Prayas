@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import {
   MapPin,
-  CheckCircle2,
   Share2,
   ShieldCheck,
   ThumbsUp,
@@ -120,20 +119,17 @@ export const CivicPostCard: React.FC<Props> = ({
 
   return (
     <View style={styles.card}>
-      {/* 1. Header: reporter, ward, timestamp, status */}
+      {/* 1. Header: avatar + handle left, plain status text right */}
       <View style={styles.headerRow}>
         <View style={styles.authorGroup}>
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarInitial}>{avatarInitial}</Text>
           </View>
-          <View>
-            <View style={styles.nameAndWard}>
-              <Text style={styles.authorHandle}>{authorHandle}</Text>
-              <View style={styles.wardBadge}>
-                <Text style={styles.wardText}>{ticket.ward_id || 'Ward 14'}</Text>
-              </View>
-            </View>
-            <Text style={styles.timestamp}>{formatTimeAgo(ticket.created_at)}</Text>
+          <View style={styles.authorText}>
+            <Text style={styles.authorHandle} numberOfLines={1}>{authorHandle}</Text>
+            <Text style={styles.timestamp} numberOfLines={1}>
+              {ticket.ward_id === 'WARD_LUDHIANA_14' ? 'Ward 14' : (ticket.ward_id || 'Ward 14')} • {formatTimeAgo(ticket.created_at)}
+            </Text>
           </View>
         </View>
         <StatusBadge status={ticket.status} />
@@ -224,10 +220,7 @@ export const CivicPostCard: React.FC<Props> = ({
             </View>
           ) : (
             ticket.status === 'RESOLVED' && (
-              <View style={styles.resolvedBadge}>
-                <CheckCircle2 size={14} color="#16A34A" />
-                <Text style={styles.resolvedText}>Verified Clean</Text>
-              </View>
+              <Text style={styles.resolvedText}>Verified Clean</Text>
             )
           )}
 
@@ -269,9 +262,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   authorGroup: {
+    flex: 1,
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    marginRight: 8,
   },
   avatarCircle: {
     width: 36,
@@ -285,25 +281,13 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.subtitle,
     color: COLORS.white,
   },
-  nameAndWard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  authorText: {
+    flex: 1,
+    flexShrink: 1,
   },
   authorHandle: {
     ...TYPOGRAPHY.bodyStrong,
     color: COLORS.text,
-  },
-  wardBadge: {
-    backgroundColor: COLORS.mist,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  wardText: {
-    ...TYPOGRAPHY.micro,
-    ...NUMERIC,
-    color: COLORS.textSecondary,
   },
   timestamp: {
     ...TYPOGRAPHY.caption,
@@ -437,20 +421,10 @@ const styles = StyleSheet.create({
     ...NUMERIC,
     color: COLORS.onOrange,
   },
-  resolvedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#F0FDF4',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-  },
   resolvedText: {
     ...TYPOGRAPHY.bodySmStrong,
-    color: '#16A34A',
+    color: COLORS.verified,
+    paddingVertical: 8,
   },
   occludedPill: {
     flexDirection: 'row',
