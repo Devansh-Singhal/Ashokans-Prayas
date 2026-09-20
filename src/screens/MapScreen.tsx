@@ -56,9 +56,6 @@ export const MapScreen: React.FC = () => {
       setLoadError(null);
       const res = await api.getWardFeed(ward.wardId);
       setTickets(res.tickets);
-      if (res.tickets.length > 0) {
-        setSelectedTicket(res.tickets[0]);
-      }
     } catch (err: any) {
       console.error('Failed to load tickets for map', err);
       setLoadError(err?.message || 'Failed to load tickets');
@@ -86,6 +83,16 @@ export const MapScreen: React.FC = () => {
     if (activeFilter === 'ALL') return tickets;
     return tickets.filter((t) => t.status === activeFilter);
   }, [tickets, activeFilter]);
+
+  // Keep the drawer selection inside the visible filter set. When the filter
+  // changes (or fresh tickets load) and the selected pin is filtered out, drop
+  // the selection so the map fits the visible pins instead of flying to a
+  // hidden one. ShowMap refits its bounds whenever tickets/selection change.
+  useEffect(() => {
+    if (selectedTicket && !filteredTickets.some((t) => t.id === selectedTicket.id)) {
+      setSelectedTicket(null);
+    }
+  }, [filteredTickets, selectedTicket]);
 
   const counts = useMemo(() => {
     return {

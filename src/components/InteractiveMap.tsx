@@ -75,8 +75,6 @@ export function InteractiveMap({
   }, [tickets, onSelectTicket]);
 
   const generateLeafletHtml = () => {
-    const centerLat = selectedTicket?.latitude ?? fallbackCenter.latitude;
-    const centerLng = selectedTicket?.longitude ?? fallbackCenter.longitude;
     const maptilerUrl = `https://api.maptiler.com/maps/streets-v4/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`;
     const osmFallbackUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
@@ -175,13 +173,17 @@ export function InteractiveMap({
     const tickets = ${ticketsData};
     const userLat = ${userCoords.latitude};
     const userLng = ${userCoords.longitude};
-    const centerLat = ${centerLat};
-    const centerLng = ${centerLng};
-    const mapZoom = ${fallbackZoom};
+
+    // Map starts on the ward frame; then fitPins() pulls every visible pin
+    // (plus the user dot) into view. A selected pin recenters via flyTo —
+    // never from an arbitrary hardcoded position.
+    var fallbackLat = ${fallbackCenter.latitude};
+    var fallbackLng = ${fallbackCenter.longitude};
+    var fallbackZoom = ${fallbackZoom};
 
     const map = L.map('map', {
-      center: [centerLat, centerLng],
-      zoom: mapZoom,
+      center: [fallbackLat, fallbackLng],
+      zoom: fallbackZoom,
       zoomControl: false,
     });
 
@@ -283,6 +285,20 @@ export function InteractiveMap({
         });
       }
     });
+
+    // Fit every visible pin (plus the user dot) in frame. Runs once at load
+    // and again whenever the ticket set changes (filters) since the whole
+    // page regenerates with fresh ticketsData. No-op on an empty set — the
+    // ward frame stays. Max zoom 16 keeps pins from stacking on each other.
+    function fitPins() {
+      var bounds = L.latLngBounds([]);
+      tickets.forEach(function (t) { bounds.extend([t.lat, t.lng]); });
+      bounds.extend([userLat, userLng]);
+      if (bounds.isValid()) {
+        map.flyToBounds(bounds.pad(0.15), { animate: true, duration: 0.8, maxZoom: 16 });
+      }
+    }
+    fitPins();
     }
   </script>
 </body>

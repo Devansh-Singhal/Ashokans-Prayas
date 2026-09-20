@@ -26,9 +26,6 @@ export const NativeOsmMap: React.FC<Props> = ({
   const fallbackZoom = area?.zoom ?? 15;
   const pillLabel = area?.pillLabel ?? 'WARD 14 • LUDHIANA GEOSPATIAL RADAR';
   const userPopupPlace = area?.userPopupPlace ?? 'Ward 14, Ludhiana';
-
-  const centerLat = selectedTicket?.latitude ?? fallbackCenter.latitude;
-  const centerLng = selectedTicket?.longitude ?? fallbackCenter.longitude;
   const ticketsData = JSON.stringify(
     tickets.map((t) => ({
       id: t.id,
@@ -40,6 +37,13 @@ export const NativeOsmMap: React.FC<Props> = ({
       isSelected: selectedTicket?.id === t.id,
     }))
   );
+  const selectedPayload = selectedTicket
+    ? JSON.stringify({
+        ticketId: selectedTicket.id,
+        lat: selectedTicket.latitude,
+        lng: selectedTicket.longitude,
+      })
+    : '';
 
   // Same self-contained Leaflet page the web build uses, served over MapTiler
   // Streets (keyed) with a thresholded OSM fallback inside a WebView so device
@@ -86,7 +90,13 @@ export const NativeOsmMap: React.FC<Props> = ({
       document.getElementById('map-error').style.display = 'flex';
     } else {
     var tickets = ${ticketsData};
-    var map = L.map('map', { center: [${centerLat}, ${centerLng}], zoom: ${fallbackZoom}, zoomControl: false });
+    // Ward frame at init; fitPins() below pulls every visible pin (plus the
+    // user dot) into view, then honors a preselected pin. Never arbitrary.
+    var fallbackLat = ${fallbackCenter.latitude};
+    var fallbackLng = ${fallbackCenter.longitude};
+    var fallbackZoom = ${fallbackZoom};
+    var selectedInit = ${selectedPayload || 'null'};
+    var map = L.map('map', { center: [fallbackLat, fallbackLng], zoom: fallbackZoom, zoomControl: false });
     var mapAttribution = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
     var primaryTiles = L.tileLayer('${maptilerUrl}', {
       attribution: mapAttribution,
@@ -151,6 +161,21 @@ export const NativeOsmMap: React.FC<Props> = ({
       });
       markersMap[ticket.id] = { marker: marker, ticket: ticket };
     });
+
+    // Fit every visible pin plus the user dot in frame (empty set: ward frame
+    // stays), then fly to a preselected pin if one was passed in.
+    function fitPins() {
+      var bounds = L.latLngBounds([]);
+      tickets.forEach(function (t) { bounds.extend([t.lat, t.lng]); });
+      bounds.extend([${userCoords.latitude}, ${userCoords.longitude}]);
+      if (bounds.isValid()) {
+        map.flyToBounds(bounds.pad(0.15), { animate: true, duration: 0.8, maxZoom: 16 });
+      }
+      if (selectedInit) {
+        map.flyTo([selectedInit.lat, selectedInit.lng], 16, { animate: true, duration: 0.8 });
+      }
+    }
+    fitPins();
 
     document.addEventListener('message', function (e) {
       try {
