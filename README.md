@@ -4,6 +4,13 @@ A mindful civic accountability app: report a pothole, have a stranger verify the
 
 Built for the Prayas Plaksha Hackathon. Expo / React Native client, FastAPI + SQLite backend, DeepSeek vision classification.
 
+
+Product Demo:
+https://youtube.com/shorts/gVtwm7u3RpI?feature=share
+
+Link to our website:
+https://github.com/CodingWorldDivyansh/Jawabdari-Website
+
 ## What it does
 
 1. **Report** — citizen photographs a civic issue (pothole, garbage, streetlight, open drain). On-device GPS + AI vision classifies the defect, maps it to the responsible Indian municipal department, rates severity 1–5, and flags spoofs (photo-of-screen), submerged roads, and privacy regions (faces, plates, shop boards).
