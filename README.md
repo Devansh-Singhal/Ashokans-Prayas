@@ -1,8 +1,15 @@
-# CivicFeed — Ashokan's Prayas
+# Jawabdari — Ashokan's Prayas
 
-A mindful civic accountability app: report a pothole, have a stranger verify the fix within 50m, and make collusion mathematically unprofitable.
+A mindful civic accountability app: report a pothole, have a stranger verify the fix within 5m, and make collusion mathematically unprofitable.
 
 Built for the Prayas Plaksha Hackathon. Expo / React Native client, FastAPI + SQLite backend, DeepSeek vision classification.
+
+
+Product Demo:
+https://youtube.com/shorts/gVtwm7u3RpI?feature=share
+
+Link to our website:
+https://github.com/CodingWorldDivyansh/Jawabdari-Website
 
 ## What it does
 
@@ -141,7 +148,7 @@ cd backend
 .venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
 ```
 
-SQLite is the default (`./civicfeed.db`). Set `DATABASE_URL` for Postgres, e.g. `postgresql+asyncpg://user:pass@localhost/civicfeed`.
+SQLite is the default (`./jawabdari.db`). Set `DATABASE_URL` for Postgres, e.g. `postgresql+asyncpg://user:pass@localhost/jawabdari`.
 
 Health check: `GET /health` → `{"status": "ok"}`.
 
@@ -182,7 +189,7 @@ Reset the demo anytime:
 
 ```bash
 cd backend
-rm civicfeed.db              # Windows: del civicfeed.db
+rm jawabdari.db              # Windows: del jawabdari.db
 .venv\Scripts\python seed_demo_data.py
 ```
 
