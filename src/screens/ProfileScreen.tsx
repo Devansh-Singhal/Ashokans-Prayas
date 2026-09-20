@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
-import { Activity, Award, CheckCircle2, Download, Eye, FileText, Globe, ShieldCheck } from 'lucide-react-native';
+import { Activity, Award, CheckCircle2, Download, Eye, FileText, Globe, ShieldCheck, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { OfficialCertificateModal } from '../components/OfficialCertificateModal';
 import { COLORS } from '../constants/colors';
 import { CAPS_LABEL, NUMERIC, TYPOGRAPHY } from '../constants/typography';
@@ -196,6 +196,23 @@ export const ProfileScreen: React.FC = () => {
           >
             <Activity size={18} color={COLORS.navy} />
             <Text style={styles.demoButtonText}>Pothole AI Detector (Stage Demo)</Text>
+          </TouchableOpacity>
+
+          {/* GDPR - account & data deletion (demo only, not wired to backend) */}
+          <TouchableOpacity
+            style={styles.deleteAccountButton}
+            onPress={() =>
+              Alert.alert(
+                'Delete Account & Data',
+                'This is a demo build - account deletion is not yet wired to the backend.'
+              )
+            }
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Delete my account and data"
+          >
+            <Trash2 size={18} color={COLORS.danger} />
+            <Text style={styles.deleteAccountButtonText}>Delete My Account & Data</Text>
           </TouchableOpacity>
         </>
       ) : (
@@ -505,6 +522,23 @@ const styles = StyleSheet.create({
   demoButtonText: {
     ...TYPOGRAPHY.bodyStrong,
     color: COLORS.navy,
+  },
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+    paddingVertical: 14,
+    minHeight: 44,
+    borderRadius: 14,
+    marginTop: 12,
+  },
+  deleteAccountButtonText: {
+    ...TYPOGRAPHY.bodyStrong,
+    color: COLORS.danger,
   },
   certificateHolderLabel: {
     ...TYPOGRAPHY.micro,
