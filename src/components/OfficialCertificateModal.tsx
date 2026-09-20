@@ -40,7 +40,7 @@ export const OfficialCertificateModal: React.FC<Props> = ({ visible, certificate
     try {
       await Share.share({
         title: `CivicFeed Official Certificate - ${certificate.recipient.name}`,
-        message: `🎓 Delighted to share my official Certificate of Civic Impact from Municipal Corporation Ludhiana (MCL) & Government of Punjab! I have completed ${verifiedTasksCount} verified civic remediation tasks safeguarding ${citizensCount.toLocaleString()}+ citizens. Verify here: ${certificate.verification_url}`,
+        message: `Delighted to share my official Certificate of Civic Impact from Municipal Corporation Ludhiana (MCL) and Government of Punjab! I have completed ${verifiedTasksCount} verified civic remediation tasks safeguarding ${citizensCount.toLocaleString()}+ citizens. Verify here: ${certificate.verification_url}`,
       });
     } catch (err) {
       console.log('Share error', err);

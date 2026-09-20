@@ -12,8 +12,10 @@ import {
   CheckCircle2,
   Share2,
   ShieldCheck,
+  ThumbsUp,
 } from 'lucide-react-native';
 import { Ticket, TicketCategory } from '../types';
+import { COLORS } from '../constants/colors';
 import { SeverityMeter } from './SeverityMeter';
 import { StatusBadge } from './StatusBadge';
 import { BeforeAfterView } from './BeforeAfterView';
@@ -99,9 +101,26 @@ export const CivicPostCard: React.FC<Props> = ({
 
   const canVerify = ticket.status === 'PROVISIONAL_FIX';
 
+  const ticketTitle = (() => {
+    switch (ticket.category) {
+      case 'POTHOLE':
+        return 'Pothole on the carriageway';
+      case 'GARBAGE_ACCUMULATION':
+        return 'Garbage pile needs clearing';
+      case 'STREETLIGHT':
+        return 'Streetlight not working';
+      case 'OPEN_DRAIN':
+        return 'Open drain hazard';
+      case 'FOOTPATH_DAMAGE':
+        return 'Damaged footpath';
+      default:
+        return 'Civic issue reported';
+    }
+  })();
+
   return (
     <View style={styles.card}>
-      {/* 1. Header: User Handle, Ward Pill, Relative Timestamp */}
+      {/* 1. Header: reporter, ward, timestamp, status */}
       <View style={styles.headerRow}>
         <View style={styles.authorGroup}>
           <View style={styles.avatarCircle}>
@@ -120,11 +139,18 @@ export const CivicPostCard: React.FC<Props> = ({
         <StatusBadge status={ticket.status} />
       </View>
 
-      {/* 2. Metadata Bar: Category Tag & Severity Meter */}
+      {/* 2. Title: category headline, largest on the card */}
+      <Text style={styles.postTitle}>{ticketTitle}</Text>
+
+      {/* 3. Meta row: category tag, upvotes, severity */}
       <View style={styles.metaRow}>
         <View style={styles.categoryBadge}>
           {getCategoryIcon(ticket.category)}
           <Text style={styles.categoryText}>{ticket.category.replace(/_/g, ' ')}</Text>
+        </View>
+        <View style={styles.upvotePill}>
+          <ThumbsUp size={12} color={COLORS.inkSoft} />
+          <Text style={styles.upvoteText}>{ticket.upvotes}</Text>
         </View>
         <SeverityMeter severity={ticket.severity} />
       </View>
@@ -223,24 +249,24 @@ export const CivicPostCard: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 14,
     marginHorizontal: 16,
     marginVertical: 8,
     shadowColor: '#0B1B2F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
     borderWidth: 1,
-    borderColor: '#E6EAF0',
+    borderColor: COLORS.mist,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   authorGroup: {
     flexDirection: 'row',
@@ -251,15 +277,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: COLORS.navy,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#C7D2FE',
   },
   avatarInitial: {
     ...TYPOGRAPHY.subtitle,
-    color: '#4F46E5',
+    color: COLORS.white,
   },
   nameAndWard: {
     flexDirection: 'row',
@@ -268,10 +292,10 @@ const styles = StyleSheet.create({
   },
   authorHandle: {
     ...TYPOGRAPHY.bodyStrong,
-    color: '#0B1B2F',
+    color: COLORS.text,
   },
   wardBadge: {
-    backgroundColor: '#E6EAF0',
+    backgroundColor: COLORS.mist,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -279,18 +303,23 @@ const styles = StyleSheet.create({
   wardText: {
     ...TYPOGRAPHY.micro,
     ...NUMERIC,
-    color: '#3D4E65',
+    color: COLORS.textSecondary,
   },
   timestamp: {
     ...TYPOGRAPHY.caption,
     ...NUMERIC,
-    color: '#3D4E65',
+    color: COLORS.textSecondary,
     marginTop: 1,
+  },
+  postTitle: {
+    ...TYPOGRAPHY.subtitle,
+    color: COLORS.text,
+    marginBottom: 8,
   },
   metaRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
     marginBottom: 8,
   },
   categoryBadge: {
@@ -307,7 +336,23 @@ const styles = StyleSheet.create({
   categoryText: {
     ...TYPOGRAPHY.captionStrong,
     ...CAPS_LABEL,
-    color: '#0B1B2F',
+    color: COLORS.text,
+  },
+  upvotePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  upvoteText: {
+    ...TYPOGRAPHY.captionStrong,
+    ...NUMERIC,
+    color: COLORS.textSecondary,
   },
   locationRow: {
     flexDirection: 'row',
@@ -323,8 +368,8 @@ const styles = StyleSheet.create({
   },
   singleImageContainer: {
     width: '100%',
-    height: 220,
-    borderRadius: 14,
+    height: 200,
+    borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: '#F1F5F9',
     position: 'relative',
@@ -338,7 +383,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    backgroundColor: '#0B1B2F',
     paddingHorizontal: 12,
     paddingVertical: 8,
     flexDirection: 'row',
@@ -376,11 +421,13 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     minHeight: 48,
   },
   verifyButtonActive: {
-    backgroundColor: '#FF7A00',
+    backgroundColor: COLORS.orange,
+    borderBottomWidth: 2,
+    borderBottomColor: '#D65400',
   },
   verifyButtonDisabled: {
     backgroundColor: '#6B7A90',
@@ -388,7 +435,7 @@ const styles = StyleSheet.create({
   verifyButtonText: {
     ...TYPOGRAPHY.bodySmStrong,
     ...NUMERIC,
-    color: '#0B1B2F',
+    color: COLORS.onOrange,
   },
   resolvedBadge: {
     flexDirection: 'row',
@@ -414,7 +461,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    opacity: 0.8,
   },
   occludedText: {
     ...TYPOGRAPHY.bodySmStrong,
@@ -423,7 +469,7 @@ const styles = StyleSheet.create({
   shareButton: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',

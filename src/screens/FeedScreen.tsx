@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   filterPill: {
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: '#E6EAF0',
     minHeight: 44,
     justifyContent: 'center',
