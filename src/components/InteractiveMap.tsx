@@ -187,16 +187,22 @@ export function InteractiveMap({
       zoomControl: false,
     });
 
-    // MapTiler Streets primary; thresholded OSM fallback if the key is rejected.
+    // MapTiler Streets when a key is set, otherwise free OSM tiles directly;
+    // with a key, a thresholded OSM fallback swaps in if the key is rejected.
     // A single bad tile never triggers the swap - 4 errors with zero loads do.
     var mapAttribution = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-    var primaryTiles = L.tileLayer('${maptilerUrl}', {
+    var osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    var useMaptilerValue = ${MAPTILER_KEY.length > 0 ? 'true' : 'false'};
+    var primaryTiles = useMaptilerValue ? L.tileLayer('${maptilerUrl}', {
       attribution: mapAttribution,
       maxZoom: 19,
       crossOrigin: true,
+    }) : L.tileLayer('${osmFallbackUrl}', {
+      attribution: osmAttribution,
+      maxZoom: 19,
     });
     var fallbackTiles = L.tileLayer('${osmFallbackUrl}', {
-      attribution: mapAttribution,
+      attribution: osmAttribution,
       maxZoom: 19,
     });
     var tileErrors = 0;

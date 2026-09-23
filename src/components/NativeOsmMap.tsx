@@ -45,11 +45,12 @@ export const NativeOsmMap: React.FC<Props> = ({
       })
     : '';
 
-  // Same self-contained Leaflet page the web build uses, served over MapTiler
-  // Streets (keyed) with a thresholded OSM fallback inside a WebView so device
-  // builds render a real live map without depending on any native map module
-  // being present in Expo Go.
+  // Same self-contained Leaflet page the web build uses. Uses MapTiler
+  // Streets when EXPO_PUBLIC_MAPTILER_KEY is set, otherwise free OSM tiles
+  // directly, so device builds render a real live map without depending on
+  // any native map module being present in Expo Go.
   const maptilerUrl = `https://api.maptiler.com/maps/streets-v4/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`;
+  const useMaptiler = MAPTILER_KEY.length > 0;
   const leafletHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,15 +99,22 @@ export const NativeOsmMap: React.FC<Props> = ({
     var selectedInit = ${selectedPayload || 'null'};
     var map = L.map('map', { center: [fallbackLat, fallbackLng], zoom: fallbackZoom, zoomControl: false });
     var mapAttribution = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-    var primaryTiles = L.tileLayer('${maptilerUrl}', {
+    var osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    var useMaptilerValue = ${useMaptiler ? 'true' : 'false'};
+    var primaryTiles = useMaptilerValue ? L.tileLayer('${maptilerUrl}', {
       attribution: mapAttribution,
       maxZoom: 19,
       crossOrigin: true,
-    });
-    var fallbackTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: mapAttribution,
+    }) : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: osmAttribution,
       maxZoom: 19,
     });
+    var fallbackTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: osmAttribution,
+      maxZoom: 19,
+    });
+    // When a key is configured, primary is MapTiler with OSM fallback on errors.
+    // Without a key, primary already IS OSM, so the fallback is a no-op.
     var tileErrors = 0;
     var tileLoads = 0;
     var fellBack = false;

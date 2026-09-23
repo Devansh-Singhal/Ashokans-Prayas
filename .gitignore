@@ -3,6 +3,21 @@
 # dependencies
 node_modules/
 
+# secrets — never commit live keys
+.env
+.env*.local
+backend/.env
+
+# local data & artifacts — never commit
+*.db
+*.sqlite*
+backend/uploads/
+uploads/
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/.pytest_cache/
+
 # Expo
 .expo/
 dist/

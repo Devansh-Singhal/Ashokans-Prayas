@@ -20,52 +20,13 @@ class GenerateCertRequest(BaseModel):
     user_id: str
 
 
-DEMO_SIMULATED_TASKS = [
-    {
-        "task_id": "sim-imu-sweep-1",
-        "task_type": "SENSOR_SWEEP",
-        "category": "POTHOLE",
-        "title": "Passive Gyroscope Pothole Detection Sweep (14.2 km corridor)",
-        "description": "Continuous 3-axis accelerometer and gyroscope vibration telemetry captured along Dugri-Gill Road corridor.",
-        "ward_id": "WARD_LUDHIANA_14",
-        "status": "COMPLETED",
-        "is_simulated": True,
-        "timestamp": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
-    },
-    {
-        "task_id": "sim-audit-drain-2",
-        "task_type": "CIVIC_AUDIT",
-        "category": "OPEN_DRAIN",
-        "title": "Monsoon Sewer Aperture Pre-Flood Audit",
-        "description": "Field visual audit of 4 stormwater drain culvert grates ahead of seasonal monsoon alerts.",
-        "ward_id": "WARD_LUDHIANA_14",
-        "status": "COMPLETED",
-        "is_simulated": True,
-        "timestamp": (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(),
-    },
-    {
-        "task_id": "sim-sanitation-drive-3",
-        "task_type": "CIVIC_AUDIT",
-        "category": "GARBAGE_ACCUMULATION",
-        "title": "Community Dhalao Vat Clearance Verification",
-        "description": "Post-clearance verification of municipal solid waste removal with geo-anchored photo evidence.",
-        "ward_id": "WARD_LUDHIANA_14",
-        "status": "COMPLETED",
-        "is_simulated": True,
-        "timestamp": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
-    },
-    {
-        "task_id": "sim-footpath-audit-4",
-        "task_type": "CIVIC_AUDIT",
-        "category": "FOOTPATH_DAMAGE",
-        "title": "Pedestrian Walkway Paver Dislodgement Audit",
-        "description": "Pedestrian safety sweep identifying displaced curb blocks obstructing elderly transit near bus stand.",
-        "ward_id": "WARD_LUDHIANA_14",
-        "status": "COMPLETED",
-        "is_simulated": True,
-        "timestamp": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(),
-    },
-]
+DEMO_SIMULATED_TASKS: list[dict[str, Any]] = []
+
+
+def _demo_tasks_enabled() -> bool:
+    import os
+
+    return os.environ.get("CIVICFEED_DEMO_TASKS", "0") == "1"
 
 
 @router.get("/user-tasks")
@@ -75,12 +36,7 @@ async def get_user_tasks(
 ) -> dict[str, Any]:
     user = await db.get(User, user_id)
     if not user:
-        # If user not found, try fallback or create mock reference
-        res = await db.execute(select(User).limit(1))
-        user = res.scalars().first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user.id
+        raise HTTPException(status_code=404, detail="User not found")
 
     # 1. Fetch user's reported tickets
     t_res = await db.execute(select(Ticket).where(Ticket.reporter_id == user_id))
@@ -116,8 +72,9 @@ async def get_user_tasks(
             "timestamp": v.created_at.isoformat() if v.created_at else "",
         })
 
-    # Always ensure representative tasks exist for a complete civic credential
-    if len(tasks) < 6:
+    # Demo seed tasks only when explicitly enabled for stage demos.
+    # Never injected in normal prod runs.
+    if _demo_tasks_enabled() and len(tasks) < 6:
         tasks.extend(DEMO_SIMULATED_TASKS)
 
     # Sort newest first
@@ -145,10 +102,7 @@ async def generate_certificate(
 ) -> dict[str, Any]:
     user = await db.get(User, payload.user_id)
     if not user:
-        res = await db.execute(select(User).limit(1))
-        user = res.scalars().first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found")
 
     tasks_data = await get_user_tasks(user_id=user.id, db=db)
     tasks = tasks_data["tasks"]

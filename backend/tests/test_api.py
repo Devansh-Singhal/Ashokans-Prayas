@@ -13,6 +13,12 @@ if os.path.exists(TEST_DB):
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB}"
 os.environ["UPLOAD_DIR"] = "/tmp/civicfeed_uploads"
 os.makedirs(os.environ["UPLOAD_DIR"], exist_ok=True)
+# Offline deterministic mode: the suite pins the filename heuristic so results
+# don't depend on live-model availability, latency, or key presence.
+# load_dotenv() in app.main re-reads backend/.env on import, so the key must be
+# blocked AFTER imports as well (see fixture).
+os.environ.pop("COMMANDCODE_API_KEY", None)
+os.environ["CIVICFEED_TEST_MODE"] = "1"
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -26,6 +32,9 @@ TestSession = async_sessionmaker(engine, expire_on_commit=False)
 
 @pytest_asyncio.fixture
 async def client():
+    # app.main.load_dotenv() re-reads backend/.env at import; re-assert offline
+    # mode per test so the suite never depends on a live key/model.
+    os.environ.pop("COMMANDCODE_API_KEY", None)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
@@ -40,8 +49,25 @@ async def client():
     app.dependency_overrides.clear()
 
 
-def photo(name="pothole.jpg", content=b"fake-image-bytes"):
-    return {"photo": (name, content, "image/jpeg")}
+def _real_jpeg(seed: int = 1) -> bytes:
+    import random
+    from io import BytesIO
+
+    from PIL import Image
+
+    random.seed(seed)
+    im = Image.new("RGB", (64, 64))
+    px = im.load()
+    for y in range(64):
+        for x in range(64):
+            px[x, y] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    buf = BytesIO()
+    im.save(buf, "JPEG", quality=80)
+    return buf.getvalue()
+
+
+def photo(name="pothole.jpg", content=None):
+    return {"photo": (name, content or _real_jpeg(), "image/jpeg")}
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,7 @@
     "scheme": "ashokansprayas",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to use the camera to capture civic issue evidence.",
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access photos to attach civic evidence.",

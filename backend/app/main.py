@@ -24,13 +24,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="CivicFeed Backend", version="0.1.0", lifespan=lifespan)
 
-# NOTE: production should restrict allow_origins to the real web/app domains.
+# CORS is locked down by default. Set CIVICFEED_CORS_ORIGINS to a comma-separated
+# allowlist (e.g. "https://jawabdari.example,https://admin.example") for deployments;
+# Expo Go dev clients should use an explicit tunnel/host origin, never "*".
+_CORS_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CIVICFEED_CORS_ORIGINS", "").split(",")
+    if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_CORS_ORIGINS,
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 app.include_router(auth.router)
